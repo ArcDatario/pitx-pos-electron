@@ -1,0 +1,26 @@
+{
+  "sqlserver": {
+    "server": "POS1\\SQLEXPRESS",
+    "database": "CheckPostingDB",
+    "username": "sa",
+    "password": "",
+    "driver": "ODBC Driver 17 for SQL Server"
+  },
+  "filters": {
+    "locationname": "PH085-PITX",
+    "storenum": 2067
+  },
+  "tsms": {
+    "api_url": "",
+    "api_token": "",
+    "tenant_id": 0,
+    "terminal_id": 0,
+    "hardware_id": "",
+    "customer_code": ""
+  },
+  "worker": {
+    "poll_interval_seconds": 60,
+    "batch_size": 100,
+    "max_retries": 5
+  }
+}

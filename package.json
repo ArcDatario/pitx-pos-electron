@@ -1,0 +1,43 @@
+{
+  "name": "pitx-pos-transfer",
+  "productName": "PITX POS Transfer",
+  "version": "1.0.0",
+  "description": "PITX POS -> TSMS transfer & submission desktop app",
+  "main": "dist/main/main.js",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "start": "npm run build && electron .",
+    "dev": "tsc -p tsconfig.json --watch",
+    "dist": "npm run build && electron-builder"
+  },
+  "author": "PITX",
+  "license": "UNLICENSED",
+  "dependencies": {
+    "axios": "^1.7.7",
+    "mssql": "^11.0.1"
+  },
+  "devDependencies": {
+    "@types/mssql": "^9.1.5",
+    "@types/node": "^20.14.9",
+    "electron": "^32.0.0",
+    "electron-builder": "^25.1.8",
+    "typescript": "^5.5.4"
+  },
+  "build": {
+    "appId": "ph.pitx.pos.transfer",
+    "productName": "PITX POS Transfer",
+    "files": [
+      "dist/**/*",
+      "src/renderer/**/*",
+      "config.default.json"
+    ],
+    "win": {
+      "target": "nsis",
+      "icon": "build/icon.ico"
+    },
+    "nsis": {
+      "oneClick": false,
+      "allowToChangeInstallationDirectory": true
+    }
+  }
+}

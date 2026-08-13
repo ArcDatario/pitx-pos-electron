@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8" />
+<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+<title>PITX POS Transfer</title>
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+  <div class="app">
+    <header class="topbar">
+      <div class="brand">
+        <div class="brand-mark">P</div>
+        <div>
+          <div class="brand-title">PITX POS Transfer</div>
+          <div class="brand-sub" id="connSub">Not connected</div>
+        </div>
+      </div>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-tab="transfer">Transfer</button>
+        <button class="tab" data-tab="settings">Settings</button>
+        <button class="tab" data-tab="install">Install</button>
+      </nav>
+    </header>
+
+    <main class="content">
+      <!-- TRANSFER TAB -->
+      <section class="panel active" id="panel-transfer">
+        <div class="stats-row" id="statusStats"></div>
+        <div class="stats-row muted" id="summaryStats"></div>
+
+        <div class="card filters-card">
+          <div class="filters">
+            <div class="field">
+              <label>Guest Check</label>
+              <input id="fGuest" type="text" placeholder="Search GUESTCHECKID" />
+            </div>
+            <div class="field">
+              <label>Business Date</label>
+              <input id="fDate" type="date" />
+            </div>
+            <div class="field">
+              <label>Status</label>
+              <select id="fStatus">
+                <option value="">All</option>
+                <option value="pending">Pending</option>
+                <option value="submitted">Submitted</option>
+                <option value="failed">Failed</option>
+                <option value="voided">Voided</option>
+              </select>
+            </div>
+            <div class="field grow"></div>
+            <button class="btn ghost" id="btnReset">Reset</button>
+            <button class="btn primary" id="btnApply">Apply</button>
+          </div>
+
+          <div class="actions">
+            <div class="action-group">
+              <label>Range</label>
+              <input id="rangeStart" type="date" />
+              <span>to</span>
+              <input id="rangeEnd" type="date" />
+            </div>
+            <button class="btn secondary" id="btnGetData">Get Data</button>
+            <button class="btn success" id="btnSubmit">Submit Pending</button>
+            <button class="btn warning hidden" id="btnPause">Pause</button>
+            <button class="btn danger hidden" id="btnAbort">Abort</button>
+            <span class="spinner hidden" id="spinner"></span>
+            <span class="status-text" id="statusText">Ready</span>
+          </div>
+        </div>
+
+        <div class="card table-card">
+          <div class="table-scroll">
+            <table id="recordsTable">
+              <thead></thead>
+              <tbody></tbody>
+            </table>
+            <div class="empty-state hidden" id="emptyState">
+              <p>No records for this filter.</p>
+              <button class="btn primary" id="btnEmptyGetData">Get Data</button>
+            </div>
+          </div>
+          <div class="pagination">
+            <button class="btn ghost sm" id="btnPrev">‹ Prev</button>
+            <span id="pageInfo">Page 1</span>
+            <button class="btn ghost sm" id="btnNext">Next ›</button>
+            <select id="pageSize">
+              <option value="25">25 / page</option>
+              <option value="50" selected>50 / page</option>
+              <option value="100">100 / page</option>
+              <option value="200">200 / page</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="card log-card">
+          <div class="log-header">
+            <span>Activity Log</span>
+            <button class="btn ghost sm" id="btnClearLog">Clear</button>
+          </div>
+          <div class="log-body" id="logBody"></div>
+        </div>
+      </section>
+
+      <!-- SETTINGS TAB -->
+      <section class="panel" id="panel-settings">
+        <div class="card">
+          <h3>SQL Server</h3>
+          <div class="form-grid">
+            <div class="field"><label>Server</label><input id="s_sqlserver_server" /></div>
+            <div class="field"><label>Database</label><input id="s_sqlserver_database" /></div>
+            <div class="field"><label>Username</label><input id="s_sqlserver_username" /></div>
+            <div class="field"><label>Password</label><input id="s_sqlserver_password" type="password" /></div>
+          </div>
+          <h3>TSMS API</h3>
+          <div class="form-grid">
+            <div class="field wide"><label>API URL</label><input id="s_tsms_api_url" /></div>
+            <div class="field wide"><label>API Token</label><input id="s_tsms_api_token" type="password" /></div>
+            <div class="field"><label>Tenant ID</label><input id="s_tsms_tenant_id" type="number" /></div>
+            <div class="field"><label>Terminal ID</label><input id="s_tsms_terminal_id" type="number" /></div>
+            <div class="field"><label>Hardware ID</label><input id="s_tsms_hardware_id" /></div>
+            <div class="field"><label>Customer Code</label><input id="s_tsms_customer_code" /></div>
+          </div>
+          <h3>Filters</h3>
+          <div class="form-grid">
+            <div class="field"><label>Location Name</label><input id="s_filters_locationname" /></div>
+            <div class="field"><label>Store Number</label><input id="s_filters_storenum" type="number" /></div>
+          </div>
+          <h3>Worker</h3>
+          <div class="form-grid">
+            <div class="field"><label>Poll Interval (sec)</label><input id="s_worker_poll_interval_seconds" type="number" /></div>
+            <div class="field"><label>Batch Size</label><input id="s_worker_batch_size" type="number" /></div>
+            <div class="field"><label>Max Retries</label><input id="s_worker_max_retries" type="number" /></div>
+          </div>
+          <div class="actions">
+            <button class="btn ghost" id="btnTestConn">Test Connection</button>
+            <button class="btn primary" id="btnSaveSettings">Save Settings</button>
+            <span class="status-text" id="settingsStatus"></span>
+          </div>
+        </div>
+      </section>
+
+      <!-- INSTALL TAB -->
+      <section class="panel" id="panel-install">
+        <div class="card">
+          <h3>1. Connect to SQL Server</h3>
+          <div class="form-grid">
+            <div class="field"><label>Server</label><input id="i_server" value="POS1\SQLEXPRESS" /></div>
+            <div class="field"><label>Database</label><input id="i_database" value="CheckPostingDB" /></div>
+            <div class="field"><label>Username</label><input id="i_username" value="sa" /></div>
+            <div class="field"><label>Password</label><input id="i_password" type="password" /></div>
+          </div>
+          <div class="actions">
+            <button class="btn primary" id="btnInstallConnect">Connect</button>
+            <span class="status-text" id="installStatus"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>2. Create Table</h3>
+          <p class="hint">Creates <code>dbo.dts_pitx_payload</code> if it doesn't already exist.</p>
+          <div class="actions">
+            <button class="btn secondary" id="btnCreateTable" disabled>Create Table</button>
+            <span class="status-text" id="createTableStatus"></span>
+          </div>
+        </div>
+        <div class="card">
+          <h3>3. Save as App Credentials</h3>
+          <p class="hint">Writes these SQL Server credentials into config.json used by the Transfer &amp; Settings tabs.</p>
+          <div class="actions">
+            <button class="btn success" id="btnInstallSave" disabled>Save Credentials</button>
+            <span class="status-text" id="installSaveStatus"></span>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+  <script src="renderer.js"></script>
+</body>
+</html>
