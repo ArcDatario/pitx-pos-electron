@@ -238,10 +238,13 @@ $("btnSubmit").addEventListener("click", async () => {
 });
 
 let paused = false;
+const pauseIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>`;
+const resumeIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
 $("btnPause").addEventListener("click", async () => {
   paused = !paused;
   await window.pos.submitControl(paused ? "pause" : "resume");
-  $("btnPause").textContent = paused ? "Resume" : "Pause";
+  $("btnPause").innerHTML = paused ? resumeIcon : pauseIcon;
+  $("btnPause").title = paused ? "Resume" : "Pause";
 });
 $("btnAbort").addEventListener("click", async () => {
   await window.pos.submitControl("abort");

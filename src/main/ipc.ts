@@ -6,9 +6,10 @@ import * as tsms from "./tsms";
 interface SubmitController {
   abort: boolean;
   paused: boolean;
+  pauseNotified: boolean;
 }
 
-let controller: SubmitController = { abort: false, paused: false };
+let controller: SubmitController = { abort: false, paused: false, pauseNotified: false };
 
 function send(win: BrowserWindow, channel: string, payload: any) {
   if (!win.isDestroyed()) win.webContents.send(channel, payload);
@@ -88,7 +89,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     async (_e, args: { start: string; end: string }) => {
       const cfg = loadConfig();
       const win = getWindow();
-      controller = { abort: false, paused: false };
+      controller = { abort: false, paused: false, pauseNotified: false };
 
       const records = await db.fetchPendingByDate(cfg, args.start, args.end);
       const total = records.length;
@@ -104,10 +105,14 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
           break;
         }
         while (controller.paused && !controller.abort) {
-          send(win, "submit:event", { type: "phase", message: "Paused" });
+          if (!controller.pauseNotified) {
+            send(win, "submit:event", { type: "phase", message: "Paused" });
+            controller.pauseNotified = true;
+          }
           await sleep(400);
         }
         if (controller.abort) break;
+        controller.pauseNotified = false;
 
         const rec = records[i];
         const guestCheckId = rec.GUESTCHECKID;

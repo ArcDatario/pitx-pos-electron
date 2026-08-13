@@ -63,8 +63,12 @@
             </div>
             <button class="btn secondary" id="btnGetData">Get Data</button>
             <button class="btn success" id="btnSubmit">Submit Pending</button>
-            <button class="btn warning hidden" id="btnPause">Pause</button>
-            <button class="btn danger hidden" id="btnAbort">Abort</button>
+            <button class="btn warning hidden" id="btnPause" title="Pause">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+            </button>
+            <button class="btn danger hidden" id="btnAbort" title="Stop">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+            </button>
             <span class="spinner hidden" id="spinner"></span>
             <span class="status-text" id="statusText">Ready</span>
           </div>

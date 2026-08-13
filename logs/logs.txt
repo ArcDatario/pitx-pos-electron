@@ -4,3 +4,29 @@
 [2026-08-13T07:24:48.808Z] [WARN] Void for 2372762c-c181-420a-8adc-7f8aabd6ecf1 not yet indexed by TSMS (attempt 1/3): Transaction not found or does not belong to this terminal -- retrying in 2s
 [2026-08-13T07:24:51.018Z] [INFO] [000000000594] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
 [2026-08-13T07:24:51.560Z] [INFO] [000000000594] Successfully marked as voided.
+[2026-08-13T07:53:53.823Z] Logger initialized
+[2026-08-13T07:54:28.389Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-13T07:54:29.354Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-13T07:54:29.407Z] [WARN] Void for eecc80d3-72bb-43f0-98a3-27195e73a82f not yet indexed by TSMS (attempt 1/3): Transaction not found or does not belong to this terminal -- retrying in 2s
+[2026-08-13T07:54:31.476Z] [WARN] Void for eecc80d3-72bb-43f0-98a3-27195e73a82f not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 2s
+[2026-08-13T07:54:33.561Z] [INFO] [000000000594] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-13T07:54:34.090Z] [INFO] [000000000594] Successfully marked as voided.
+[2026-08-13T08:01:33.316Z] Logger initialized
+[2026-08-13T08:01:40.397Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-13T08:02:44.733Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-13T08:02:44.735Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-13T08:02:45.792Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-13T08:02:45.850Z] [WARN] Void for 8b044351-eea5-40ec-97ca-cbd824e7b5f9 not yet indexed by TSMS (attempt 1/3): Transaction not found or does not belong to this terminal -- retrying in 2s
+[2026-08-13T08:02:47.948Z] [INFO] [000000000594] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-13T08:02:48.485Z] [INFO] [000000000594] Successfully marked as voided.
+[2026-08-13T08:02:49.594Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-13T08:02:50.618Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-13T08:03:48.967Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-13T08:03:50.062Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-13T08:03:51.121Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-13T08:03:52.259Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-13T08:03:53.357Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-13T08:08:30.538Z] Logger initialized

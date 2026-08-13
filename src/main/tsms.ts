@@ -515,6 +515,7 @@ export async function submitOne(cfg: AppConfig, rec: Record<string, any>): Promi
       };
     }
     await db.markSubmitted(cfg, guestCheckId, submission);
+    console.info(`[${guestCheckId}] Successfully marked as submitted.`);
   } else if (outcome === "rate_limited") {
     const retryAfter = parseRetryAfter(headers) ?? DEFAULT_RATE_LIMIT_SECONDS;
     await db.markRateLimited(cfg, guestCheckId, retryAfter, message);
