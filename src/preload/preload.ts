@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld("pos", {
     ipcRenderer.invoke("submit:control", action),
   resubmit: (guestCheckId: string) => ipcRenderer.invoke("submit:resubmit", guestCheckId),
   voidRecord: (guestCheckId: string) => ipcRenderer.invoke("submit:void", guestCheckId),
+  previewPayload: (guestCheckId: string) => ipcRenderer.invoke("preview:payload", guestCheckId),
 
   onSubmitEvent: (callback: (event: any) => void) => {
     const listener = (_e: unknown, payload: any) => callback(payload);

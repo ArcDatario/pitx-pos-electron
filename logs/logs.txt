@@ -30,3 +30,21 @@
 [2026-08-13T08:03:52.259Z] [INFO] [000000000602] Successfully marked as submitted.
 [2026-08-13T08:03:53.357Z] [INFO] [000000000603] Successfully marked as submitted.
 [2026-08-13T08:08:30.538Z] Logger initialized
+[2026-08-13T09:53:14.968Z] Logger initialized
+[2026-08-13T09:54:12.591Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-13T09:54:12.593Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-13T09:54:13.564Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-13T09:54:13.622Z] [WARN] Void for 6984ff19-6feb-4cbe-a412-87c50487e295 not yet indexed by TSMS (attempt 1/3): Transaction not found or does not belong to this terminal -- retrying in 2s
+[2026-08-13T09:54:15.720Z] [INFO] [000000000594] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-13T09:54:16.249Z] [INFO] [000000000594] Successfully marked as voided.
+[2026-08-13T09:54:17.381Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-13T09:54:18.395Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-13T09:54:19.466Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-13T09:54:20.543Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-13T09:54:21.492Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-13T09:54:22.650Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-13T09:54:23.560Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-14T01:08:09.293Z] Logger initialized
+[2026-08-14T07:42:04.263Z] Logger initialized
+[2026-08-14T07:49:30.759Z] Logger initialized
+[2026-08-18T01:38:04.153Z] Logger initialized

@@ -185,3 +185,26 @@ tbody tr.selected { background: var(--primary-dim); }
 .log-line.success { color: var(--success); }
 .log-line.error, .log-line.failed_terminal { color: var(--danger); }
 .log-line.warning, .log-line.rate_limited { color: var(--warning); }
+
+.modal-overlay {
+  position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000;
+  display: flex; align-items: center; justify-content: center;
+}
+.modal-overlay.hidden { display: none; }
+.modal {
+  background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
+  width: 92%; max-width: 760px; max-height: 82vh; display: flex; flex-direction: column;
+}
+.modal-header {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 14px 18px; border-bottom: 1px solid var(--card-border);
+}
+.modal-header h3 { margin: 0; font-size: 13px; text-transform: uppercase; letter-spacing: .06em; color: var(--text-dim); }
+.modal-close {
+  background: transparent; border: none; font-size: 24px; color: var(--text-dim); cursor: pointer; line-height: 1;
+}
+.modal-body {
+  padding: 14px 18px; overflow: auto; font-family: "Cascadia Code", Consolas, monospace;
+  font-size: 11px; color: var(--text); white-space: pre-wrap; word-break: break-all;
+}
+.modal-footer { padding: 10px 18px; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; gap: 8px; }

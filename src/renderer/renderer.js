@@ -12,7 +12,7 @@ const state = {
 };
 
 const COLUMNS = [
-  ["GUESTCHECKID", "Guest Check"],
+  ["receipt_no", "Receipt No"],
   ["businessdate", "Date"],
   ["locationname", "Location"],
   ["status", "Status"],
@@ -21,9 +21,9 @@ const COLUMNS = [
   ["vat_12", "VAT 12%"],
   ["gross_sales", "Gross Sales"],
   ["voidtotal_amt", "Void Amt"],
-  ["receipt_no", "Receipt No"],
   ["transaction_id", "Transaction ID"],
   ["last_error", "Last Error"],
+  ["payload", "Payload"],
 ];
 
 const $ = (id) => document.getElementById(id);
@@ -107,6 +107,9 @@ function renderTableRows(rows) {
         if (key === "businessdate" && r[key]) {
           return `<td>${String(r[key]).slice(0, 10)}</td>`;
         }
+        if (key === "payload") {
+          return `<td><button class="btn ghost sm copy-payload-btn" data-id="${r.GUESTCHECKID}" title="Copy payload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>`;
+        }
         return `<td>${r[key] ?? ""}</td>`;
       }).join("");
       return `<tr data-id="${r.GUESTCHECKID}">${cells}</tr>`;
@@ -118,6 +121,21 @@ function renderTableRows(rows) {
       tbody.querySelectorAll("tr").forEach((t) => t.classList.remove("selected"));
       tr.classList.add("selected");
       state.selectedGuestCheckId = tr.dataset.id;
+    });
+    tr.addEventListener("dblclick", async () => {
+      const guestCheckId = tr.dataset.id;
+      setStatus("Building payload...");
+      try {
+        const res = await window.pos.previewPayload(guestCheckId);
+        if (res.ok) {
+          openPayloadModal(JSON.stringify(res.payload, null, 2));
+          setStatus("Payload preview ready");
+        } else {
+          setStatus("Failed: " + res.message);
+        }
+      } catch (err) {
+        setStatus("Failed: " + err.message);
+      }
     });
   });
 }
@@ -255,6 +273,50 @@ window.pos.onSubmitEvent((event) => {
   logEvent(event.type, event.message);
   if (event.type === "sending") {
     setStatus(`Sending ${event.guest_check_id} (${event.index}/${event.total})`);
+  }
+});
+
+// ---------- Payload preview / copy ----------
+let currentPreviewPayload = null;
+
+function openPayloadModal(text) {
+  currentPreviewPayload = text;
+  $("payloadPreview").textContent = text;
+  $("payloadModal").classList.remove("hidden");
+}
+
+function closePayloadModal() {
+  $("payloadModal").classList.add("hidden");
+  currentPreviewPayload = null;
+}
+
+$("payloadModal").addEventListener("click", (e) => {
+  if (e.target === $("payloadModal")) closePayloadModal();
+});
+$("btnCloseModal").addEventListener("click", closePayloadModal);
+$("btnCopyModal").addEventListener("click", async () => {
+  if (currentPreviewPayload) {
+    await navigator.clipboard.writeText(currentPreviewPayload);
+    setStatus("Payload copied to clipboard");
+  }
+});
+
+document.addEventListener("click", async (e) => {
+  const btn = e.target.closest(".copy-payload-btn");
+  if (!btn) return;
+  const guestCheckId = btn.dataset.id;
+  setStatus("Building payload...");
+  try {
+    const res = await window.pos.previewPayload(guestCheckId);
+    if (res.ok) {
+      const text = JSON.stringify(res.payload, null, 2);
+      await navigator.clipboard.writeText(text);
+      setStatus("Payload copied to clipboard");
+    } else {
+      setStatus("Failed: " + res.message);
+    }
+  } catch (err) {
+    setStatus("Failed: " + err.message);
   }
 });
 

@@ -533,3 +533,33 @@ export async function submitOne(cfg: AppConfig, rec: Record<string, any>): Promi
 
   return { outcome, message, data, httpCode, transactionId, submission };
 }
+
+export async function previewPayload(cfg: AppConfig, rec: Record<string, any>): Promise<{ transaction: any; submission: any }> {
+  const guestCheckId = String(rec.GUESTCHECKID);
+  const upper = upperCaseKeys(rec);
+  const voidQty = Number(upper.VOIDTOTAL_QTY ?? 0);
+  const voidAmt = Number(upper.VOIDTOTAL_AMT ?? 0);
+  const isVoid = voidQty !== 0 || voidAmt !== 0;
+
+  let transactionId = await db.ensureTransactionId(cfg, guestCheckId, upper.TRANSACTION_ID ?? null);
+
+  let buildRec = upper;
+  if (isVoid) {
+    buildRec = { ...upper };
+    const amountFields = [
+      "NETSALES", "VAT_12", "LESSVAT", "LESSPWD", "GC_SALES", "GC_EXCESS",
+      "VATABLE_SALES", "GROSS_SALES", "SC_VAT_EXCEMPT_SALES", "OTHER_TAX",
+      "OTHERDISCOUNT", "VOIDTOTAL_AMT", "VOIDTOTAL_QTY",
+    ];
+    for (const field of amountFields) {
+      const val = buildRec[field];
+      if (val !== null && val !== undefined && Number(val) < 0) {
+        buildRec[field] = String(Math.abs(Number(val)));
+      }
+    }
+  }
+
+  const txn = buildTransaction(cfg, buildRec, transactionId);
+  const submission = buildSubmission(cfg, txn);
+  return { transaction: txn, submission };
+}

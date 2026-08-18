@@ -194,16 +194,19 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     if (!rec) return { ok: false, message: "Record not found" };
     if (!rec.transaction_id) return { ok: false, message: "No TRANSACTION_ID found" };
 
-    // Manual void: the transaction_id here was already accepted by TSMS at
-    // some point in the past (however long ago the row was submitted), so
-    // there's no post-submit indexing race to guard against -- plain
-    // voidTransaction() is correct here, unlike the post-submit path in
-    // submitOne() which uses voidTransactionAfterSubmit().
     const result = await tsms.voidTransaction(cfg, rec.transaction_id);
     if (result.outcome === "success") {
       await db.markVoided(cfg, guestCheckId, {});
       return { ok: true, message: "Voided" };
     }
     return { ok: false, message: result.message };
+  });
+
+  ipcMain.handle("preview:payload", async (_e, guestCheckId: string) => {
+    const cfg = loadConfig();
+    const rec = await db.fetchRecordByGuestCheckId(cfg, guestCheckId);
+    if (!rec) return { ok: false, message: "Record not found" };
+    const payload = await tsms.previewPayload(cfg, rec);
+    return { ok: true, payload };
   });
 }
