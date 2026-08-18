@@ -379,47 +379,14 @@ $("btnTestConn").addEventListener("click", async () => {
   }
 });
 
-// ---------- Install ----------
-let installCfg = null;
-
-$("btnInstallConnect").addEventListener("click", async () => {
-  installCfg = {
-    ...state.config,
-    sqlserver: {
-      server: $("i_server").value,
-      database: $("i_database").value,
-      username: $("i_username").value,
-      password: $("i_password").value,
-      driver: "ODBC Driver 17 for SQL Server",
-    },
-  };
-  $("installStatus").textContent = "Connecting...";
-  const res = await window.pos.testConnection(installCfg);
-  if (res.ok) {
-    $("installStatus").textContent = `Connected to ${res.dbName}`;
-    $("btnCreateTable").disabled = false;
-    $("btnInstallSave").disabled = false;
-  } else {
-    $("installStatus").textContent = `Failed: ${res.message}`;
-  }
-});
-
 $("btnCreateTable").addEventListener("click", async () => {
   $("createTableStatus").textContent = "Creating...";
   try {
-    await window.pos.saveConfig(installCfg); // installCreateTable reads config from disk
     await window.pos.installCreateTable();
     $("createTableStatus").textContent = "Table ready";
   } catch (e) {
     $("createTableStatus").textContent = `Failed: ${e.message}`;
   }
-});
-
-$("btnInstallSave").addEventListener("click", async () => {
-  await window.pos.saveConfig(installCfg);
-  state.config = installCfg;
-  fillSettingsForm(installCfg);
-  $("installSaveStatus").textContent = "Saved as active credentials";
 });
 
 // ---------- Boot ----------

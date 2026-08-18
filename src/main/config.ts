@@ -42,7 +42,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     server: "POS1\\SQLEXPRESS",
     database: "CheckPostingDB",
     username: "sa",
-    password: "",
+    password: "#1mymicros",
     driver: "ODBC Driver 17 for SQL Server",
   },
   filters: {
@@ -50,12 +50,12 @@ export const DEFAULT_CONFIG: AppConfig = {
     storenum: 2067,
   },
   tsms: {
-    api_url: "",
-    api_token: "",
-    tenant_id: 0,
-    terminal_id: 0,
-    hardware_id: "",
-    customer_code: "",
+    api_url: "https://stagingtsms.pitx.com.ph/api/v1/transactions/official",
+    api_token: "771|ypxW7TK2sI4Cv9EQModjAWx6ryY8tFBRwJMv1CeE1d10223b",
+    tenant_id: 26,
+    terminal_id: 131,
+    hardware_id: "4312BDC02001242",
+    customer_code: "C-C1031",
   },
   worker: {
     poll_interval_seconds: 60,

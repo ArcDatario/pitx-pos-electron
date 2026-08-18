@@ -648,14 +648,6 @@ def _format_iso(value):
     return value.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
 
 
-def tsms_receipt_no(businessdate, guest_check_id):
-    """Unique per submission attempt for testing/resubmit support.
-    Appends an 8-char hex suffix so each call produces a different receipt_no."""
-    bd = str(businessdate)[:10].replace("-", "")
-    unique = uuid.uuid4().hex[:8]
-    return f"R{bd}-{guest_check_id}-{unique}"[:128]
-
-
 def tsms_sort_keys_recursive(data):
     if isinstance(data, dict):
         return {k: tsms_sort_keys_recursive(v) for k, v in sorted(data.items())}
@@ -671,9 +663,13 @@ def tsms_checksum(data):
 
 
 def build_transaction(cfg, agg, transaction_id):
-    """Rebuilds the transaction object. Note: receipt_no is now unique per
-    call (for testing/resubmit support), so the payload will differ across
-    submission attempts even for the same row."""
+    """Rebuilds the transaction object to match the TSMS payload format:
+    {
+      transaction_id, hardware_id, receipt_no, transaction_timestamp,
+      gross_sales, net_sales, promo_status, customer_code,
+      payload_checksum, adjustments[], taxes[]
+    }
+    receipt_no is taken directly from the database record."""
     tcfg = cfg["tsms"]
     gross_sales = float(agg.get("GROSS_SALES", 0) or 0)
     net_sales = float(agg.get("NETSALES", 0) or 0)
@@ -689,17 +685,17 @@ def build_transaction(cfg, agg, transaction_id):
     gc_excess = float(agg.get("GC_EXCESS", 0) or 0)
     other_tax = float(agg.get("OTHER_TAX", 0) or 0)
     promo_discount_total = less_national + less_solo
-    promo_status = "WITHOUT_APPROVAL" if promo_discount_total > 0 else "NONE"
+    promo_status = "WITH_APPROVAL" if promo_discount_total > 0 else "NONE"
 
     txn = {
         "transaction_id": transaction_id,
         "hardware_id": tcfg["hardware_id"],
-        "receipt_no": tsms_receipt_no(agg.get("BUSINESSDATE"), agg.get("GUESTCHECKID")),
+        "receipt_no": agg.get("RECEIPT_NO"),
         "transaction_timestamp": _format_iso(agg.get("TRANSDATETIME") or agg.get("BUSINESSDATE")),
         "gross_sales": tsms_amount(gross_sales),
         "net_sales": tsms_amount(net_sales),
         "promo_status": promo_status,
-        "customer_code": tcfg.get("customer_code") or None,
+        "customer_code": tcfg["customer_code"] if "customer_code" in tcfg else None,
         "payload_checksum": "",
         "adjustments": [
             {"adjustment_type": "promo_discount", "amount": tsms_amount(promo_discount_total)},

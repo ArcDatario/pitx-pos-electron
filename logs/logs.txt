@@ -48,3 +48,59 @@
 [2026-08-14T07:42:04.263Z] Logger initialized
 [2026-08-14T07:49:30.759Z] Logger initialized
 [2026-08-18T01:38:04.153Z] Logger initialized
+[2026-08-18T02:54:13.020Z] Logger initialized
+[2026-08-18T02:54:18.784Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-18T02:59:00.233Z] Logger initialized
+[2026-08-18T03:07:31.094Z] Logger initialized
+[2026-08-18T03:21:29.850Z] Logger initialized
+[2026-08-18T03:21:35.542Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-18T03:31:03.945Z] Logger initialized
+[2026-08-18T03:31:09.770Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-18T03:31:21.299Z] [ERROR] Error occurred in handler for 'db:records': {
+  "code": "ETIMEOUT",
+  "originalError": {
+    "code": "ETIMEOUT"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-18T03:35:01.805Z] Logger initialized
+[2026-08-18T03:35:07.677Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-18T03:36:15.559Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-18T03:36:15.560Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-18T03:36:16.973Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-18T03:36:17.041Z] [WARN] Void for 1bc075a8-a4af-45a8-bdf7-db5be4d90de8 not yet indexed by TSMS (attempt 1/3): Transaction not found or does not belong to this terminal -- retrying in 2s
+[2026-08-18T03:36:19.106Z] [WARN] Void for 1bc075a8-a4af-45a8-bdf7-db5be4d90de8 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 2s
+[2026-08-18T03:36:21.178Z] [INFO] [000000000594] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-18T03:36:21.752Z] [INFO] [000000000594] Successfully marked as voided.
+[2026-08-18T03:36:22.874Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-18T03:36:23.951Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-18T03:36:24.994Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-18T03:36:25.981Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-18T03:36:27.074Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-18T03:36:28.093Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-18T03:36:29.468Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-18T03:58:40.763Z] Logger initialized
+[2026-08-18T04:26:24.268Z] Logger initialized
+[2026-08-18T05:37:02.116Z] Logger initialized
+[2026-08-18T05:37:09.822Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-18T05:50:20.041Z] Logger initialized
+[2026-08-18T05:50:25.673Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-18T05:53:14.608Z] Logger initialized

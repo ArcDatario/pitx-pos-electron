@@ -30,12 +30,16 @@ function buildMssqlConfig(sc: SqlServerConfig): sql.config {
 
 export async function getPool(cfg: AppConfig): Promise<ConnectionPool> {
   const key = JSON.stringify(cfg.sqlserver);
-  if (pool && poolKey === key && pool.connected) return pool;
-  if (pool) {
+  if (pool && poolKey === key && pool.connected) {
     try {
-      await pool.close();
+      await pool.request().query("SELECT 1 AS ok");
+      return pool;
     } catch {
-      /* ignore */
+      try {
+        await pool.close();
+      } catch {
+        /* ignore */
+      }
     }
   }
   poolKey = key;
@@ -255,21 +259,16 @@ export async function transfer(
                 THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0))
                 ELSE 0
             END AS vatable_sales,
-            -- sc_vat_excempt_sales: If lessvat > 0 -> VAT-exempt
+            -- sc_vat_excempt_sales: 
+            -- For Solo Parent: use the calculated netsales (39.38)
+            -- For other VAT-exempt (PWD, Senior Citizen, Zero Rated): source Netsales
+            -- For VATable transactions: 0
             CASE
-                WHEN (CASE 
-                    WHEN sp.FCRInvNumber IS NOT NULL
-                    THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) -
-                         (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12)
-                    WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                    THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) * 0.12
-                    ELSE 0
-                END) > 0
-                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.LessSC ELSE 0 END), 0)) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.LessPWD ELSE 0 END), 0)) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessNationalAth ELSE 0 END), 0)) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessSoloparent ELSE 0 END), 0))
+                WHEN sp.FCRInvNumber IS NOT NULL
+                THEN (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) -
+                     ((SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) * 0.10)
+                WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
+                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
             0 AS other_tax
@@ -339,10 +338,21 @@ export async function transfer(
             END AS vat,
             -- gross_sales: 
             -- Solo Parent: amt / 1.12
-            -- Others: netsales + vat + lessNtnlAth + lessSoloparent + lessEMP
+            -- PWD: netsales + lessPWD
+            -- Senior Citizen: netsales + lessSC
+            -- Zero Rated: netsales
+            -- Employee, National Athlete, Standard: netsales + vat + lessNtnlAth + lessSoloparent + lessEMP
             CASE 
                 WHEN sp.FCRInvNumber IS NOT NULL
                 THEN SUM(ISNULL(ABS(v.amt), 0)) / 1.12
+                WHEN MAX(v.order_type) = 'PWD'
+                THEN SUM(ISNULL(ABS(v.Netsales), 0)) +
+                     SUM(ISNULL(ABS(v.LessPWD), 0))
+                WHEN MAX(v.order_type) = 'Senior Citizen'
+                THEN SUM(ISNULL(ABS(v.Netsales), 0)) +
+                     SUM(ISNULL(ABS(v.LessSC), 0))
+                WHEN MAX(v.order_type) = 'Zero Rated'
+                THEN SUM(ISNULL(ABS(v.Netsales), 0))
                 ELSE SUM(ISNULL(ABS(v.Netsales), 0)) +
                      (CASE 
                         WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
@@ -365,20 +375,16 @@ export async function transfer(
                 THEN SUM(ISNULL(ABS(v.Netsales), 0))
                 ELSE 0
             END AS vatable_sales,
-            -- sc_vat_excempt_sales: If lessvat > 0 -> VAT-exempt
+            -- sc_vat_excempt_sales: 
+            -- For Solo Parent: use the calculated netsales (39.38)
+            -- For other VAT-exempt (PWD, Senior Citizen, Zero Rated): source Netsales
+            -- For VATable transactions: 0
             CASE
-                WHEN (CASE 
-                    WHEN sp.FCRInvNumber IS NOT NULL
-                    THEN SUM(ISNULL(ABS(v.amt), 0)) - (SUM(ISNULL(ABS(v.amt), 0)) / 1.12)
-                    WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                    THEN SUM(ISNULL(ABS(v.Netsales), 0)) * 0.12
-                    ELSE 0
-                END) > 0
-                THEN SUM(ISNULL(ABS(v.Netsales), 0)) +
-                     SUM(ISNULL(ABS(v.LessSC), 0)) +
-                     SUM(ISNULL(ABS(v.LessPWD), 0)) +
-                     SUM(ISNULL(ABS(v.lessNationalAth), 0)) +
-                     SUM(ISNULL(ABS(v.lessSoloparent), 0))
+                WHEN sp.FCRInvNumber IS NOT NULL
+                THEN (SUM(ISNULL(ABS(v.amt), 0)) / 1.12) -
+                     ((SUM(ISNULL(ABS(v.amt), 0)) / 1.12) * 0.10)
+                WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
+                THEN SUM(ISNULL(ABS(v.Netsales), 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
             0 AS other_tax

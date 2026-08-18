@@ -19,7 +19,6 @@
       <nav class="tabs" id="tabs">
         <button class="tab active" data-tab="transfer">Transfer</button>
         <button class="tab" data-tab="settings">Settings</button>
-        <button class="tab" data-tab="install">Install</button>
       </nav>
     </header>
 
@@ -142,38 +141,13 @@
             <button class="btn primary" id="btnSaveSettings">Save Settings</button>
             <span class="status-text" id="settingsStatus"></span>
           </div>
-        </div>
-      </section>
-
-      <!-- INSTALL TAB -->
-      <section class="panel" id="panel-install">
-        <div class="card">
-          <h3>1. Connect to SQL Server</h3>
-          <div class="form-grid">
-            <div class="field"><label>Server</label><input id="i_server" value="POS1\SQLEXPRESS" /></div>
-            <div class="field"><label>Database</label><input id="i_database" value="CheckPostingDB" /></div>
-            <div class="field"><label>Username</label><input id="i_username" value="sa" /></div>
-            <div class="field"><label>Password</label><input id="i_password" type="password" /></div>
-          </div>
-          <div class="actions">
-            <button class="btn primary" id="btnInstallConnect">Connect</button>
-            <span class="status-text" id="installStatus"></span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>2. Create Table</h3>
-          <p class="hint">Creates <code>dbo.dts_pitx_payload</code> if it doesn't already exist.</p>
-          <div class="actions">
-            <button class="btn secondary" id="btnCreateTable" disabled>Create Table</button>
-            <span class="status-text" id="createTableStatus"></span>
-          </div>
-        </div>
-        <div class="card">
-          <h3>3. Save as App Credentials</h3>
-          <p class="hint">Writes these SQL Server credentials into config.json used by the Transfer &amp; Settings tabs.</p>
-          <div class="actions">
-            <button class="btn success" id="btnInstallSave" disabled>Save Credentials</button>
-            <span class="status-text" id="installSaveStatus"></span>
+          <div class="card">
+            <h3>Database</h3>
+            <p class="hint">Creates <code>dbo.dts_pitx_payload</code> if it doesn't already exist.</p>
+            <div class="actions">
+              <button class="btn secondary" id="btnCreateTable">Create Table</button>
+              <span class="status-text" id="createTableStatus"></span>
+            </div>
           </div>
         </div>
       </section>

@@ -89,21 +89,6 @@ function formatIso(value: Date | string | null | undefined): string {
   return d.toISOString().replace(/Z$/, "").slice(0, 23) + "Z";
 }
 
-export function tsmsReceiptNo(businessDate: Date | string | null | undefined, guestCheckId: string): string {
-  let bd: string;
-  if (businessDate == null) {
-    bd = "";
-  } else if (businessDate instanceof Date) {
-    // mssql returns DATE columns as JS Date objects; str(date) in the Python
-    // reference yields "YYYY-MM-DD" (ISO), so mirror that with toISOString.
-    bd = businessDate.toISOString().slice(0, 10).replace(/-/g, "");
-  } else {
-    bd = String(businessDate).slice(0, 10).replace(/-/g, "");
-  }
-  const unique = randomUUID().replace(/-/g, "").slice(0, 8);
-  return `R${bd}-${guestCheckId}-${unique}`.slice(0, 128);
-}
-
 /** Recursively sorts object keys so the checksum is stable regardless of
  * property insertion order -- mirrors tsms_sort_keys_recursive(). */
 function sortKeysRecursive(value: any): any {
@@ -136,10 +121,13 @@ export function upperCaseKeys(rec: Record<string, any>): Record<string, any> {
 }
 
 /**
- * Rebuilds the transaction object. receipt_no is unique per call (for
- * testing/resubmit support), so the payload legitimately differs across
- * submission attempts even for the same row -- 1:1 port of
- * tsms_common.py::build_transaction().
+ * Rebuilds the transaction object to match the TSMS payload format:
+ * {
+ *   transaction_id, hardware_id, receipt_no, transaction_timestamp,
+ *   gross_sales, net_sales, promo_status, customer_code,
+ *   payload_checksum, adjustments[], taxes[]
+ * }
+ * receipt_no is taken directly from the database record (RECEIPT_NO).
  */
 export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, transactionId: string) {
   const tcfg = cfg.tsms;
@@ -157,17 +145,17 @@ export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, trans
   const gcExcess = Number(agg.GC_EXCESS ?? 0);
   const otherTax = Number(agg.OTHER_TAX ?? 0);
   const promoDiscountTotal = lessNational + lessSolo;
-  const promoStatus = promoDiscountTotal > 0 ? "WITHOUT_APPROVAL" : "NONE";
+  const promoStatus = promoDiscountTotal > 0 ? "WITH_APPROVAL" : "NONE";
 
   const txn: Record<string, any> = {
     transaction_id: transactionId,
     hardware_id: tcfg.hardware_id,
-    receipt_no: tsmsReceiptNo(agg.BUSINESSDATE, String(agg.GUESTCHECKID)),
+    receipt_no: agg.RECEIPT_NO ?? null,
     transaction_timestamp: formatIso(agg.TRANSDATETIME ?? agg.BUSINESSDATE),
     gross_sales: tsmsAmount(grossSales),
     net_sales: tsmsAmount(netSales),
     promo_status: promoStatus,
-    customer_code: tcfg.customer_code || null,
+    customer_code: tcfg.customer_code ?? null,
     payload_checksum: "",
     adjustments: [
       { adjustment_type: "promo_discount", amount: tsmsAmount(promoDiscountTotal) },
@@ -534,7 +522,7 @@ export async function submitOne(cfg: AppConfig, rec: Record<string, any>): Promi
   return { outcome, message, data, httpCode, transactionId, submission };
 }
 
-export async function previewPayload(cfg: AppConfig, rec: Record<string, any>): Promise<{ transaction: any; submission: any }> {
+export async function previewPayload(cfg: AppConfig, rec: Record<string, any>): Promise<any> {
   const guestCheckId = String(rec.GUESTCHECKID);
   const upper = upperCaseKeys(rec);
   const voidQty = Number(upper.VOIDTOTAL_QTY ?? 0);
@@ -561,5 +549,5 @@ export async function previewPayload(cfg: AppConfig, rec: Record<string, any>): 
 
   const txn = buildTransaction(cfg, buildRec, transactionId);
   const submission = buildSubmission(cfg, txn);
-  return { transaction: txn, submission };
+  return submission;
 }
