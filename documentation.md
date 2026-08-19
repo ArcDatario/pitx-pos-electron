@@ -463,6 +463,7 @@ Wraps `txn` in the submission envelope:
 - CSS custom properties for theming.
 - Modern card-based layout with sticky table headers.
 - Color-coded status badges (pending=yellow, submitted=green, failed=red, voided=gray).
+- **Dark mode**: a `[data-theme="dark"]` palette (backgrounds, borders, text, badge tints, table hover) toggled by a sun/moon button in the top bar; saved to `localStorage`, defaults to the OS `prefers-color-scheme`.
 - Modal overlay for payload preview.
 - **UI framework**: Bootstrap 5 (`src/renderer/lib/bootstrap.min.css` + `bootstrap.bundle.min.js`, vendored locally and packaged with `src/renderer/**/*`) provides the responsive grid, `row`/`col` form layout, flex/gap utilities, and baseline. Custom `styles.css` loads after Bootstrap and overrides the branded components (cards, table, badges, modals, stat pills, buttons), plus a small `(max-width: 768px)` media query that tightens gutters, font sizes, and stat pills for narrow windows. The Settings form now uses `row g-3` + `col-12 col-md-6` so it collapses to a single column instead of overlapping on small screens.
 
@@ -548,10 +549,15 @@ const state = {
 - Uses the currently saved config (not a separate install config).
 
 #### Boot
+- `initTheme()` — applies the saved (`localStorage`) or OS-default (`prefers-color-scheme`) theme before rendering.
 - `renderTableHead()`
 - Loads config, fills settings form.
 - Sets date range inputs to today.
 - Calls `refreshAll()` (stats + records).
+
+#### Dark Mode Toggle (`btnThemeToggle`)
+- Click toggles `data-theme="dark"` on `<html>` (swaps the sun/moon icon and updates the title).
+- Saved to `localStorage.theme` so it persists across restarts.
 
 ---
 

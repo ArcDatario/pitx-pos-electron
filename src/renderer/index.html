@@ -18,11 +18,16 @@
           <div class="brand-sub" id="connSub">Not connected</div>
         </div>
       </div>
-      <nav class="tabs" id="tabs">
-        <button class="tab active" data-tab="transfer">Transfer</button>
-        <button class="tab" data-tab="settings">Settings</button>
-      </nav>
-    </header>
+      <div class="d-flex align-items-center gap-2">
+          <nav class="tabs" id="tabs">
+            <button class="tab active" data-tab="transfer">Transfer</button>
+            <button class="tab" data-tab="settings">Settings</button>
+          </nav>
+         <button class="btn ghost sm" id="btnThemeToggle" title="Toggle dark mode">
+           <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+         </button>
+       </div>
+     </header>
 
     <main class="content">
       <!-- TRANSFER TAB -->
@@ -78,13 +83,15 @@
 
         <div class="card table-card">
           <div class="table-scroll">
-            <table id="recordsTable">
+            <div class="table-responsive">
+              <table id="recordsTable">
               <thead></thead>
               <tbody></tbody>
             </table>
             <div class="empty-state hidden" id="emptyState">
               <p>No records for this filter.</p>
               <button class="btn primary" id="btnEmptyGetData">Get Data</button>
+            </div>
             </div>
           </div>
           <div class="pagination">

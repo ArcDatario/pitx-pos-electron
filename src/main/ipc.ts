@@ -1,4 +1,4 @@
-import { ipcMain, BrowserWindow } from "electron";
+import { app, ipcMain, BrowserWindow } from "electron";
 import { AppConfig, loadConfig, saveConfig, getConfigFilePath } from "./config";
 import * as db from "./db";
 import * as tsms from "./tsms";
@@ -37,6 +37,10 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   });
 
   ipcMain.handle("config:path", () => getConfigFilePath());
+
+  ipcMain.handle("app:quit", () => {
+    app.quit();
+  });
 
   ipcMain.handle("config:test-connection", async (_e, cfg: AppConfig) => {
     return db.testConnection(cfg);

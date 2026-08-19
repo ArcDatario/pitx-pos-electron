@@ -16,6 +16,27 @@
   --gray: #9ca3af;
   --radius: 12px;
   --shadow: 0 4px 16px rgba(0,0,0,0.05);
+  --topbar-bg: rgba(255, 255, 255, 0.85);
+  --gradient-stop: #eff6ff;
+  --row-hover: rgba(79, 142, 247, 0.06);
+}
+
+/* Dark theme — activated by data-theme="dark" on <html> */
+[data-theme="dark"] {
+  --bg: #0f1424;
+  --bg-elev: #1a2038;
+  --card: #1a2038;
+  --card-border: #2e364f;
+  --text: #e5e7eb;
+  --text-dim: #9ca3af;
+  --primary-dim: #2a3d7a;
+  --success-dim: #1b3a2a;
+  --warning-dim: #4a2e00;
+  --danger-dim: #4a1e24;
+  --gray: #6b7280;
+  --topbar-bg: rgba(15, 20, 36, 0.88);
+  --gradient-stop: #1a2a5c;
+  --row-hover: rgba(79, 142, 247, 0.14);
 }
 
 * { box-sizing: border-box; }
@@ -23,7 +44,7 @@
 html, body {
   margin: 0;
   height: 100%;
-  background: radial-gradient(1200px 600px at 10% -10%, #eff6ff 0%, var(--bg) 55%);
+  background: radial-gradient(1200px 600px at 10% -10%, var(--gradient-stop) 0%, var(--bg) 55%);
   color: var(--text);
   font-family: "Segoe UI", -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 13px;
@@ -36,7 +57,7 @@ html, body {
   align-items: center;
   justify-content: space-between;
   padding: 12px 20px;
-  background: rgba(255, 255, 255, 0.85);
+  background: var(--topbar-bg);
   backdrop-filter: blur(8px);
   border-bottom: 1px solid var(--card-border);
 }
@@ -137,11 +158,11 @@ input:focus, select:focus { border-color: var(--primary); }
 
 .table-card { padding: 0; overflow: hidden; }
 .table-scroll { max-height: 420px; overflow: auto; position: relative; }
-table { border-collapse: collapse; width: 100%; font-size: 12px; }
+table { border-collapse: collapse; width: 100%; font-size: 12px; color: var(--text); background-color: var(--card); }
 thead th {
   position: sticky; top: 0;
   background: var(--bg-elev);
-  color: var(--text-dim);
+  color: var(--text);
   text-align: left; padding: 10px 12px;
   font-weight: 600; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em;
   border-bottom: 1px solid var(--card-border);
@@ -149,16 +170,16 @@ thead th {
 }
 tbody td {
   padding: 8px 12px; border-bottom: 1px solid var(--card-border);
-  white-space: nowrap;
+  white-space: nowrap; color: var(--text);
 }
-tbody tr:hover { background: rgba(79, 142, 247, 0.06); cursor: pointer; }
+tbody tr:hover { background: var(--row-hover); cursor: pointer; }
 tbody tr.selected { background: var(--primary-dim); }
 
 .badge { padding: 3px 9px; border-radius: 999px; font-size: 10.5px; font-weight: 700; text-transform: capitalize; }
 .badge.pending { background: var(--warning-dim); color: var(--warning); }
 .badge.submitted { background: var(--success-dim); color: var(--success); }
 .badge.failed { background: var(--danger-dim); color: var(--danger); }
-.badge.voided { background: #f3f4f6; color: var(--gray); }
+.badge.voided { background: var(--card-border); color: var(--text-dim); }
 
 .empty-state { padding: 60px 0; text-align: center; color: var(--text-dim); display: flex; flex-direction: column; align-items: center; gap: 12px; }
 

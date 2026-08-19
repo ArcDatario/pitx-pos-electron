@@ -29,4 +29,6 @@ contextBridge.exposeInMainWorld("pos", {
     ipcRenderer.on("submit:event", listener);
     return () => ipcRenderer.removeListener("submit:event", listener);
   },
+
+  quitApp: () => ipcRenderer.invoke("app:quit"),
 });
