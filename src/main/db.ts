@@ -177,7 +177,11 @@ export async function transfer(
             v.BusinessDate,
             MAX(v.sys_datetime) AS transdatetime,
             v.FCRInvNumber AS guestcheckid,
-            MAX(v.order_type) AS ordertypename,
+            CASE 
+                WHEN sp.FCRInvNumber IS NOT NULL THEN 'Solo Parent'
+                WHEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessemp ELSE 0 END), 0)) > 0 THEN 'Employee'
+                ELSE MAX(v.order_type)
+            END AS ordertypename,
             MAX(v.FCRInvNumber) AS receipt_no,
             -- netsales:
             -- Solo Parent: (amt / 1.12) - ((amt / 1.12) * 0.10) = gross_sales - lessSoloparent
@@ -284,7 +288,11 @@ export async function transfer(
             v.BusinessDate,
             MAX(v.sys_datetime) AS transdatetime,
             MAX(v.FCRInvNumber) AS guestcheckid,
-            MAX(v.order_type) AS ordertypename,
+            CASE 
+                WHEN sp.FCRInvNumber IS NOT NULL THEN 'Solo Parent'
+                WHEN SUM(ISNULL(ABS(v.lessemp), 0)) > 0 THEN 'Employee'
+                ELSE MAX(v.order_type)
+            END AS ordertypename,
             MAX(v.FCRInvNumber) AS receipt_no,
             -- netsales:
             -- Solo Parent: (amt / 1.12) - ((amt / 1.12) * 0.10) = gross_sales - lessSoloparent

@@ -14,6 +14,7 @@ const state = {
 const COLUMNS = [
   ["receipt_no", "Receipt No"],
   ["businessdate", "Date"],
+  ["ordertypename", "Order Type"],
   ["locationname", "Location"],
   ["status", "Status"],
   ["retry_count", "Retry"],
@@ -76,6 +77,8 @@ async function refreshStats() {
     ["lessvat", "Less VAT"],
     ["lessSC", "Less SC"],
     ["lessPWD", "Less PWD"],
+    ["lessEMP", "Less EMP"],
+    ["lessSoloParent", "Less Sol. Parent"],
     ["void_amt", "Void Amt"],
     ["total_revenue", "Total Revenue"],
   ];

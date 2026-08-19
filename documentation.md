@@ -485,10 +485,11 @@ const state = {
 
 #### Stats (`refreshStats`)
 - Calls `window.pos.getStatusCounts()` → renders stat pills (Total, Pending, Submitted, Failed, Voided).
-- Calls `window.pos.getSummary(state.filters)` → renders metric pills (Net Sales, VAT 12%, Less VAT, Less SC, Less PWD, Void Amt, Total Revenue).
+ - Calls `window.pos.getStatusCounts()` → renders stat pills (Total, Pending, Submitted, Failed, Voided).
+ - Calls `window.pos.getSummary(state.filters)` → renders metric pills (Net Sales, VAT 12%, Less VAT, Less SC, Less PWD, Less EMP, Less Sol. Parent, Void Amt, Total Revenue).
 
 #### Table (`renderTableRows`)
-- Columns: Receipt No, Date, Location, Status, Retry, Net Sales, VAT 12%, Gross Sales, Void Amt, Transaction ID, Last Error, Payload.
+   - Columns: Receipt No, Date, Order Type, Location, Status, Retry, Net Sales, VAT 12%, Gross Sales, Void Amt, Transaction ID, Last Error, Payload.
 - Click → select row.
 - Double-click → open payload preview modal.
 - Payload column has a copy button.
