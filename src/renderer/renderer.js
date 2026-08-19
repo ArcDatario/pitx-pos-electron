@@ -276,6 +276,57 @@ window.pos.onSubmitEvent((event) => {
   }
 });
 
+// ---------- Submit Today (insert today's data + submit) ----------
+function openConfirmModal() {
+  const today = new Date().toISOString().slice(0, 10);
+  $("confirmTodayDate").textContent = today;
+  $("confirmDateRange").textContent = `${today} to ${today}`;
+  $("confirmModal").classList.remove("hidden");
+}
+
+function closeConfirmModal() {
+  $("confirmModal").classList.add("hidden");
+}
+
+$("btnSubmitToday").addEventListener("click", () => {
+  if (state.submitting) {
+    setStatus("A submission is already in progress");
+    return;
+  }
+  openConfirmModal();
+});
+
+$("confirmModal").addEventListener("click", (e) => {
+  if (e.target === $("confirmModal")) closeConfirmModal();
+});
+$("btnCloseConfirmModal").addEventListener("click", closeConfirmModal);
+$("btnConfirmCancel").addEventListener("click", closeConfirmModal);
+
+$("btnConfirmSubmit").addEventListener("click", async () => {
+  closeConfirmModal();
+  toggleSubmittingUi(true);
+  setStatus("Submitting today...");
+  logEvent("phase", "Submit Today: inserting today's transactions then submitting");
+  try {
+    const result = await window.pos.submitToday();
+    const inserted = result.inserted ?? 0;
+    setStatus(
+      `Done: ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed` +
+        (result.aborted ? " (aborted)" : "")
+    );
+    logEvent(
+      "success",
+      `Submit Today complete — ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`
+    );
+  } catch (e) {
+    logEvent("error", `Submit Today failed: ${e.message}`);
+    setStatus("Submit Today failed");
+  } finally {
+    toggleSubmittingUi(false);
+    refreshAll();
+  }
+});
+
 // ---------- Payload preview / copy ----------
 let currentPreviewPayload = null;
 

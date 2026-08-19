@@ -103,8 +103,9 @@ Exposes these methods to the renderer via `window.pos`:
 | `getRecords(filters, page, pageSize)` | `db:records` | Paginated table data |
 | `getRecord(guestCheckId)` | `db:record` | Single record by GUESTCHECKID |
 | `installCreateTable()` | `install:create-table` | Create `dbo.dts_pitx_payload` if missing |
-| `submitByDateRange(start, end)` | `submit:by-date-range` | Batch submit pending records |
-| `submitControl(action)` | `submit:control` | Pause/resume/abort batch submit |
+   | `submitByDateRange(start, end)` | `submit:by-date-range` | Batch submit pending records |
+ | `submitToday()` | `submit:today` | Insert today's transactions then submit them |
+ | `submitControl(action)` | `submit:control` | Pause/resume/abort batch submit |
 | `resubmit(guestCheckId)` | `submit:resubmit` | Reset and resubmit a single record |
 | `voidRecord(guestCheckId)` | `submit:void` | Void a submitted transaction |
 | `previewPayload(guestCheckId)` | `preview:payload` | Build and return the TSMS payload JSON |
@@ -434,9 +435,10 @@ Wraps `txn` in the submission envelope:
 ### 8.3 `install:*`
 - `install:create-table` → `db.installCreateTable(cfg)` → returns `{ ok: true }`
 
-### 8.4 `submit:*`
-- `submit:by-date-range` → Batch submit loop (see Section 9.2)
-- `submit:control` → Pause/resume/abort controller
+   ### 8.4 `submit:*`
+ - `submit:by-date-range` → Batch submit loop (see Section 9.2)
+ - `submit:today` → Insert today's transactions (`db.transfer`) then run the batch submit for today's date
+ - `submit:control` → Pause/resume/abort controller
 - `submit:resubmit` → Reset row + `tsms.submitOne`
 - `submit:void` → `tsms.voidTransaction` + `db.markVoided`
 
@@ -504,13 +506,21 @@ const state = {
 - Calls `window.pos.transfer(start, end)`.
 - Logs inserted count.
 
-#### Submit (`btnSubmit`)
-- Reads date range.
-- Calls `window.pos.submitByDateRange(start, end)`.
-- Shows pause/abort buttons during submission.
-- Pause toggles `paused` state, sends `submit:control("pause"/"resume")`.
-- Abort sends `submit:control("abort")`.
-- Listens to `window.pos.onSubmitEvent` for live progress events.
+ #### Submit (`btnSubmit`)
+ - Reads date range.
+ - Calls `window.pos.submitByDateRange(start, end)`.
+ - Shows pause/abort buttons during submission.
+ - Pause toggles `paused` state, sends `submit:control("pause"/"resume")`.
+ - Abort sends `submit:control("abort")`.
+ - Listens to `window.pos.onSubmitEvent` for live progress events.
+
+ #### Submit Today (`btnSubmitToday`)
+ - Opens a confirmation modal showing today's date (computed in the renderer as `YYYY-MM-DD`).
+ - Confirm runs `window.pos.submitToday()`, which in the main process:
+   1. Inserts today's transactions via `db.transfer(cfg, today, today)`.
+   2. Submits all pending rows for today via the shared batch submit loop (`runSubmitBatch`).
+   3. Streams progress back over `submit:event`.
+ - Pause/abort reuse the same `submit:control` controller.
 
 #### Payload Preview / Copy
 - **Double-click row**: Calls `window.pos.previewPayload(id)`, opens modal with formatted JSON.

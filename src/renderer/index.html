@@ -62,6 +62,7 @@
             </div>
             <button class="btn secondary" id="btnGetData">Get Data</button>
             <button class="btn success" id="btnSubmit">Submit Pending</button>
+            <button class="btn success" id="btnSubmitToday">Submit Today</button>
             <button class="btn warning hidden" id="btnPause" title="Pause">
               <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
             </button>
@@ -164,7 +165,31 @@
         <button class="btn primary" id="btnCopyModal">Copy</button>
       </div>
     </div>
-  </div>
-  <script src="renderer.js"></script>
-</body>
+   </div>
+   <div class="modal-overlay hidden" id="confirmModal">
+     <div class="modal">
+       <div class="modal-header">
+         <h3>Submit Today's Transactions</h3>
+         <button class="modal-close" id="btnCloseConfirmModal">&times;</button>
+       </div>
+       <div class="modal-body">
+         <p>This will insert today's transactions and submit them to the TSMS API.</p>
+         <div class="confirm-field">
+           <span class="confirm-label">Date (Today)</span>
+           <span class="confirm-value" id="confirmTodayDate"></span>
+         </div>
+         <div class="confirm-field">
+           <span class="confirm-label">Range</span>
+           <span class="confirm-value" id="confirmDateRange"> — to — </span>
+         </div>
+       </div>
+       <div class="modal-footer">
+         <button class="btn ghost" id="btnConfirmCancel">Cancel</button>
+         <button class="btn success" id="btnConfirmSubmit">Confirm &amp; Submit</button>
+       </div>
+     </div>
+   </div>
+   <script src="renderer.js"></script>
+ </body>
+ </html>
 </html>

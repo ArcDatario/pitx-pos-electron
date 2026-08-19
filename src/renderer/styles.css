@@ -208,3 +208,11 @@ tbody tr.selected { background: var(--primary-dim); }
   font-size: 11px; color: var(--text); white-space: pre-wrap; word-break: break-all;
 }
 .modal-footer { padding: 10px 18px; border-top: 1px solid var(--card-border); display: flex; justify-content: flex-end; gap: 8px; }
+
+.confirm-field {
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 8px 10px; background: var(--bg-elev); border-radius: 8px;
+  border: 1px solid var(--card-border); margin-top: 10px;
+}
+.confirm-label { font-size: 11px; color: var(--text-dim); }
+.confirm-value { font-weight: 600; color: var(--text); }
