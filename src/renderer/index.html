@@ -1,10 +1,12 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-<meta charset="UTF-8" />
-<meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
-<title>PITX POS Transfer</title>
-<link rel="stylesheet" href="styles.css" />
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
+    <title>PITX POS Transfer</title>
+    <link rel="stylesheet" href="lib/bootstrap.min.css" />
+    <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
   <div class="app">
@@ -111,31 +113,31 @@
       <section class="panel" id="panel-settings">
         <div class="card">
           <h3>SQL Server</h3>
-          <div class="form-grid">
-            <div class="field"><label>Server</label><input id="s_sqlserver_server" /></div>
-            <div class="field"><label>Database</label><input id="s_sqlserver_database" /></div>
-            <div class="field"><label>Username</label><input id="s_sqlserver_username" /></div>
-            <div class="field"><label>Password</label><input id="s_sqlserver_password" type="password" /></div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><div class="field"><label>Server</label><input id="s_sqlserver_server" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Database</label><input id="s_sqlserver_database" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Username</label><input id="s_sqlserver_username" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Password</label><input id="s_sqlserver_password" type="password" /></div></div>
           </div>
           <h3>TSMS API</h3>
-          <div class="form-grid">
-            <div class="field wide"><label>API URL</label><input id="s_tsms_api_url" /></div>
-            <div class="field wide"><label>API Token</label><input id="s_tsms_api_token" type="password" /></div>
-            <div class="field"><label>Tenant ID</label><input id="s_tsms_tenant_id" type="number" /></div>
-            <div class="field"><label>Terminal ID</label><input id="s_tsms_terminal_id" type="number" /></div>
-            <div class="field"><label>Hardware ID</label><input id="s_tsms_hardware_id" /></div>
-            <div class="field"><label>Customer Code</label><input id="s_tsms_customer_code" /></div>
+          <div class="row g-3">
+            <div class="col-12"><div class="field"><label>API URL</label><input id="s_tsms_api_url" /></div></div>
+            <div class="col-12"><div class="field"><label>API Token</label><input id="s_tsms_api_token" type="password" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Tenant ID</label><input id="s_tsms_tenant_id" type="number" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Terminal ID</label><input id="s_tsms_terminal_id" type="number" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Hardware ID</label><input id="s_tsms_hardware_id" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Customer Code</label><input id="s_tsms_customer_code" /></div></div>
           </div>
           <h3>Filters</h3>
-          <div class="form-grid">
-            <div class="field"><label>Location Name</label><input id="s_filters_locationname" /></div>
-            <div class="field"><label>Store Number</label><input id="s_filters_storenum" type="number" /></div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><div class="field"><label>Location Name</label><input id="s_filters_locationname" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Store Number</label><input id="s_filters_storenum" type="number" /></div></div>
           </div>
           <h3>Worker</h3>
-          <div class="form-grid">
-            <div class="field"><label>Poll Interval (sec)</label><input id="s_worker_poll_interval_seconds" type="number" /></div>
-            <div class="field"><label>Batch Size</label><input id="s_worker_batch_size" type="number" /></div>
-            <div class="field"><label>Max Retries</label><input id="s_worker_max_retries" type="number" /></div>
+          <div class="row g-3">
+            <div class="col-12 col-md-6"><div class="field"><label>Poll Interval (sec)</label><input id="s_worker_poll_interval_seconds" type="number" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Batch Size</label><input id="s_worker_batch_size" type="number" /></div></div>
+            <div class="col-12 col-md-6"><div class="field"><label>Max Retries</label><input id="s_worker_max_retries" type="number" /></div></div>
           </div>
           <div class="actions">
             <button class="btn ghost" id="btnTestConn">Test Connection</button>
@@ -189,7 +191,7 @@
        </div>
      </div>
    </div>
-   <script src="renderer.js"></script>
- </body>
- </html>
+    <script src="lib/bootstrap.bundle.min.js"></script>
+    <script src="renderer.js"></script>
+  </body>
 </html>

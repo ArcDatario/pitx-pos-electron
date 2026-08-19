@@ -13,22 +13,59 @@ const state = {
 
 const COLUMNS = [
   ["receipt_no", "Receipt No"],
-  ["businessdate", "Date"],
+  ["transdatetime", "Date/Time"],
   ["ordertypename", "Order Type"],
   ["locationname", "Location"],
   ["status", "Status"],
   ["retry_count", "Retry"],
   ["netsales", "Net Sales"],
   ["vat_12", "VAT 12%"],
+  ["lessvat", "Less VAT"],
+  ["discount", "Discount"],
   ["gross_sales", "Gross Sales"],
   ["voidtotal_amt", "Void Amt"],
+  ["submission_timestamp", "Submitted At"],
+  ["submission_uuid", "Submission UUID"],
   ["transaction_id", "Transaction ID"],
   ["last_error", "Last Error"],
+  ["last_payload_sent", "Sent Payload"],
   ["payload", "Payload"],
 ];
 
 const $ = (id) => document.getElementById(id);
 const fmt = (n) => (typeof n === "number" ? n.toFixed(2) : n ?? "0.00");
+
+const pad = (n) => String(n).padStart(2, "0");
+
+// Formats a DATETIME2 value (string from tedious, or a Date) as a readable
+// "YYYY-MM-DD HH:MM:SS", preserving the stored wall-clock time.
+function fmtDate(v) {
+  if (!v) return "";
+  if (v instanceof Date) {
+    return (
+      pad(v.getFullYear()) + "-" + pad(v.getMonth() + 1) + "-" + pad(v.getDate()) +
+      " " + pad(v.getHours()) + ":" + pad(v.getMinutes()) + ":" + pad(v.getSeconds())
+    );
+  }
+  return String(v)
+    .replace(/\.\d+(Z|[+-]\d{2}:?\d{2})?$/, "")
+    .replace("T", " ")
+    .trim();
+}
+
+function getVal(r, key) {
+  const lower = key.toLowerCase();
+  const found = Object.keys(r).find((k) => k.toLowerCase() === lower);
+  return found !== undefined ? r[found] : undefined;
+}
+
+function discountFor(r) {
+  for (const f of ["lessSoloparent", "lessPWD", "lessSC", "lessEMP", "lessNtnlAth", "otherdiscount"]) {
+    const v = Number(getVal(r, f));
+    if (!isNaN(v) && v !== 0) return v;
+  }
+  return 0;
+}
 
 // ---------- Tabs ----------
 document.querySelectorAll(".tab").forEach((btn) => {
@@ -88,6 +125,8 @@ async function refreshStats() {
 }
 
 // ---------- Table ----------
+const copyCache = new Map(); // guestCheckId -> last_payload_sent text (only rows with data)
+
 function renderTableHead() {
   $("recordsTable").querySelector("thead").innerHTML =
     "<tr>" + COLUMNS.map(([, label]) => `<th>${label}</th>`).join("") + "</tr>";
@@ -104,11 +143,25 @@ function renderTableRows(rows) {
           const s = (r.status || "").toLowerCase();
           return `<td><span class="badge ${s}">${r.status ?? ""}</span></td>`;
         }
-        if (["netsales", "vat_12", "gross_sales", "voidtotal_amt"].includes(key)) {
+        if (["netsales", "vat_12", "lessvat", "gross_sales", "voidtotal_amt"].includes(key)) {
           return `<td>${fmt(r[key])}</td>`;
         }
-        if (key === "businessdate" && r[key]) {
-          return `<td>${String(r[key]).slice(0, 10)}</td>`;
+        if (key === "discount") {
+          return `<td>${fmt(discountFor(r))}</td>`;
+        }
+        if (key === "transdatetime" && r[key]) {
+          return `<td>${fmtDate(r[key])}</td>`;
+        }
+        if (key === "submission_timestamp" && r[key]) {
+          return `<td>${fmtDate(r[key])}</td>`;
+        }
+        if (key === "submission_uuid" && r[key]) {
+          return `<td title="${r[key]}">${String(r[key]).slice(0, 8)}…</td>`;
+        }
+        if (key === "last_payload_sent") {
+          if (!r[key]) return `<td></td>`;
+          copyCache.set(r.GUESTCHECKID, r[key]);
+          return `<td><button class="btn ghost sm copy-col-btn" data-id="${r.GUESTCHECKID}" title="Copy sent payload">${copyIconSvg}</button></td>`;
         }
         if (key === "payload") {
           return `<td><button class="btn ghost sm copy-payload-btn" data-id="${r.GUESTCHECKID}" title="Copy payload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>`;
@@ -261,6 +314,8 @@ $("btnSubmit").addEventListener("click", async () => {
 let paused = false;
 const pauseIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>`;
 const resumeIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
+const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
+const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
 $("btnPause").addEventListener("click", async () => {
   paused = !paused;
   await window.pos.submitControl(paused ? "pause" : "resume");
@@ -373,6 +428,32 @@ document.addEventListener("click", async (e) => {
     setStatus("Failed: " + err.message);
   }
 });
+
+document.addEventListener("click", (e) => {
+  const btn = e.target.closest(".copy-col-btn");
+  if (!btn) return;
+  const text = copyCache.get(btn.dataset.id);
+  if (text === undefined || text === null) return;
+  navigator.clipboard.writeText(text).then(
+    () => {
+      animateCopyCheck(btn);
+      setStatus("Copied to clipboard");
+    },
+    (err) => setStatus("Copy failed: " + err.message)
+  );
+});
+
+function animateCopyCheck(btn) {
+  const original = btn.innerHTML;
+  btn.innerHTML = checkIconSvg;
+  btn.classList.add("copied");
+  btn.title = "Copied!";
+  setTimeout(() => {
+    btn.innerHTML = original;
+    btn.classList.remove("copied");
+    btn.title = "Copy sent payload";
+  }, 1500);
+}
 
 // ---------- Settings ----------
 const SETTINGS_FIELDS = [

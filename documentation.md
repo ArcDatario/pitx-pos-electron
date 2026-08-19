@@ -14,7 +14,7 @@ The app is a 1:1 TypeScript port of a legacy Python system (`tsms_common.py`, `p
 |-------|-----------|
 | Runtime | Electron 32.x |
 | Language | TypeScript 5.5 (main + preload), plain JS (renderer) |
-| UI | HTML5 + CSS3 (no framework) |
+| UI | HTML5 + CSS3 + Bootstrap 5 (vendored locally) |
 | SQL Driver | `mssql` (tedious) for Node.js |
 | HTTP Client | `axios` |
 | Crypto | Node.js built-in `crypto` |
@@ -43,8 +43,9 @@ pitx-pos-electron/
 │   ├── preload/
 │   │   └── preload.ts            # Exposes window.pos API to renderer via contextBridge
 │   └── renderer/
-│       ├── index.html            # Single-page app UI (Transfer + Settings tabs)
-│       ├── styles.css            # Modern CSS (no framework)
+│       ├── index.html            # Single-page app UI (Transfer + Settings tabs, Bootstrap markup)
+│       ├── lib/                  # Vendored Bootstrap (bootstrap.min.css, bootstrap.bundle.min.js)
+│       ├── styles.css            # Bootstrap overrides + branded components (theming, badges, modals, stat pills)
 │       └── renderer.js           # UI logic, event handlers, tab switching
 └── dist/                         # Compiled output
     └── main/
@@ -463,7 +464,7 @@ Wraps `txn` in the submission envelope:
 - Modern card-based layout with sticky table headers.
 - Color-coded status badges (pending=yellow, submitted=green, failed=red, voided=gray).
 - Modal overlay for payload preview.
-- No external CSS framework.
+- **UI framework**: Bootstrap 5 (`src/renderer/lib/bootstrap.min.css` + `bootstrap.bundle.min.js`, vendored locally and packaged with `src/renderer/**/*`) provides the responsive grid, `row`/`col` form layout, flex/gap utilities, and baseline. Custom `styles.css` loads after Bootstrap and overrides the branded components (cards, table, badges, modals, stat pills, buttons), plus a small `(max-width: 768px)` media query that tightens gutters, font sizes, and stat pills for narrow windows. The Settings form now uses `row g-3` + `col-12 col-md-6` so it collapses to a single column instead of overlapping on small screens.
 
 ### 9.3 JavaScript (`renderer.js`)
 
@@ -489,7 +490,13 @@ const state = {
  - Calls `window.pos.getSummary(state.filters)` → renders metric pills (Net Sales, VAT 12%, Less VAT, Less SC, Less PWD, Less EMP, Less Sol. Parent, Void Amt, Total Revenue).
 
 #### Table (`renderTableRows`)
-   - Columns: Receipt No, Date, Order Type, Location, Status, Retry, Net Sales, VAT 12%, Gross Sales, Void Amt, Transaction ID, Last Error, Payload.
+   - Columns: Receipt No, Date/Time (transdatetime), Order Type, Location, Status, Retry, Net Sales, VAT 12%, Less VAT, Discount, Gross Sales, Void Amt, Submitted At, Submission UUID, Transaction ID, Last Error, **Sent Payload** (copy icon), Payload.
+
+   - **Order Type** (`ordertypename`): `'Solo Parent'` when the guest check has a Solo Parent discount, `'Employee'` when `lessEMP > 0`, otherwise the source `order_type`.
+
+   - **Discount** (centralized): the first non-zero value among `lessSoloparent`, `lessPWD`, `lessSC`, `lessEMP`, `lessNtnlAth`, `otherdiscount` (only one is non-zero per row, following the order type) — surfaces a single discount figure instead of listing every `less*` column.
+
+   - **Sent Payload** (copy icon): shows a copy button only when `last_payload_sent` has data; clicking copies the stored payload JSON to the clipboard and briefly animates a check mark. The separate **Payload** column still rebuilds and copies the current (pre-submit) payload via `previewPayload`.
 - Click → select row.
 - Double-click → open payload preview modal.
 - Payload column has a copy button.
