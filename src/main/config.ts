@@ -22,6 +22,7 @@ export interface TsmsConfig {
   terminal_id: number;
   hardware_id: string;
   customer_code: string;
+  auto_receipt_no: boolean;
 }
 
 export interface WorkerConfig {
@@ -56,6 +57,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     terminal_id: 131,
     hardware_id: "4312BDC02001242",
     customer_code: "C-C1031",
+    auto_receipt_no: false,
   },
   worker: {
     poll_interval_seconds: 60,

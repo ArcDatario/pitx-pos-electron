@@ -513,6 +513,8 @@ function fillSettingsForm(cfg) {
     const el = $(`s_${section}_${key}`);
     if (el) el.value = cfg[section]?.[key] ?? "";
   }
+  const autoReceiptEl = $("s_tsms_auto_receipt_no");
+  if (autoReceiptEl) autoReceiptEl.checked = cfg.tsms?.auto_receipt_no ?? false;
 }
 
 function collectSettingsForm() {
@@ -523,6 +525,8 @@ function collectSettingsForm() {
     const raw = el.value;
     cfg[section][key] = el.type === "number" ? Number(raw) : raw;
   }
+  const autoReceiptEl = $("s_tsms_auto_receipt_no");
+  if (autoReceiptEl) cfg.tsms.auto_receipt_no = autoReceiptEl.checked;
   return cfg;
 }
 

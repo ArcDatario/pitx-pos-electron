@@ -150,7 +150,7 @@ export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, trans
   const txn: Record<string, any> = {
     transaction_id: transactionId,
     hardware_id: tcfg.hardware_id,
-    receipt_no: agg.RECEIPT_NO ?? null,
+    receipt_no: cfg.tsms.auto_receipt_no ? (agg.GUESTCHECKID ?? null) : (agg.RECEIPT_NO ?? null),
     transaction_timestamp: formatIso(agg.TRANSDATETIME ?? agg.BUSINESSDATE),
     gross_sales: tsmsAmount(grossSales),
     net_sales: tsmsAmount(netSales),
