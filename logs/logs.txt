@@ -156,3 +156,55 @@
 [2026-08-19T07:00:01.826Z] Logger initialized
 [2026-08-19T07:07:22.752Z] Logger initialized
 [2026-08-19T07:17:39.559Z] Logger initialized
+[2026-08-19T07:31:33.939Z] Logger initialized
+[2026-08-19T07:57:53.945Z] Logger initialized
+[2026-08-19T07:57:59.822Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-19T08:01:45.233Z] Logger initialized
+[2026-08-19T08:11:51.181Z] Logger initialized
+[2026-08-19T09:01:48.280Z] Logger initialized
+[2026-08-19T09:01:52.013Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "EINSTLOOKUP",
+  "originalError": {
+    "code": "EINSTLOOKUP"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-19T09:01:52.021Z] [ERROR] Error occurred in handler for 'db:records': {
+  "code": "EINSTLOOKUP",
+  "originalError": {
+    "code": "EINSTLOOKUP"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-19T09:04:22.870Z] Logger initialized
+[2026-08-19T09:04:26.845Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "EINSTLOOKUP",
+  "originalError": {
+    "code": "EINSTLOOKUP"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-19T09:04:26.851Z] [ERROR] Error occurred in handler for 'db:records': {
+  "code": "EINSTLOOKUP",
+  "originalError": {
+    "code": "EINSTLOOKUP"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-19T10:53:23.029Z] Logger initialized
+[2026-08-20T00:48:51.728Z] Logger initialized
+[2026-08-20T00:48:59.489Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-20T00:49:02.853Z] [ERROR] Error occurred in handler for 'db:records': {
+  "code": "ETIMEOUT",
+  "originalError": {
+    "code": "ETIMEOUT"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-20T01:06:43.747Z] Logger initialized

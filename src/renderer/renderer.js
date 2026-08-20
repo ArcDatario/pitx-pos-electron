@@ -68,14 +68,11 @@ function discountFor(r) {
 }
 
 // ---------- Dark mode ----------
-const MOON_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>`;
-const SUN_SVG = `<svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line><line x1="4.22" y1="19.78" x2="5.64" y2="18.36"></line><line x1="18.36" y1="5.64" x2="19.78" y2="4.22"></line></svg>`;
-
 function applyTheme(theme) {
   document.documentElement.setAttribute("data-theme", theme);
   document.documentElement.setAttribute("data-bs-theme", theme);
   const icon = $("themeIcon");
-  if (icon) icon.innerHTML = theme === "dark" ? SUN_SVG : MOON_SVG;
+  if (icon) icon.className = theme === "dark" ? "bi bi-sun" : "bi bi-moon";
   const btn = $("btnThemeToggle");
   if (btn) btn.title = theme === "dark" ? "Switch to light mode" : "Switch to dark mode";
 }
@@ -110,6 +107,9 @@ function switchTab(name) {
 document.querySelectorAll(".tab").forEach((btn) => {
   btn.addEventListener("click", () => switchTab(btn.dataset.tab));
 });
+
+// Native File > Settings menu item (see preload.ts: onNavigateSettings)
+window.pos.onNavigateSettings(() => switchTab("settings"));
 
 // ---------- Activity log ----------
 function logEvent(type, message) {
@@ -198,7 +198,7 @@ function renderTableRows(rows) {
           return `<td><button class="btn ghost sm copy-col-btn" data-id="${r.GUESTCHECKID}" title="Copy sent payload">${copyIconSvg}</button></td>`;
         }
         if (key === "payload") {
-          return `<td><button class="btn ghost sm copy-payload-btn" data-id="${r.GUESTCHECKID}" title="Copy payload"><svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg></button></td>`;
+          return `<td><button class="btn ghost sm copy-payload-btn" data-id="${r.GUESTCHECKID}" title="Copy payload"><i class="bi bi-clipboard"></i></button></td>`;
         }
         return `<td>${r[key] ?? ""}</td>`;
       }).join("");
@@ -346,10 +346,10 @@ $("btnSubmit").addEventListener("click", async () => {
 });
 
 let paused = false;
-const pauseIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>`;
-const resumeIcon = `<svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M8 5v14l11-7z"/></svg>`;
-const copyIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><rect x="9" y="9" width="13" height="13" rx="2" ry="2"></rect><path d="M5 15H4a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h9a2 2 0 0 1 2 2v1"></path></svg>`;
-const checkIconSvg = `<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="20 6 9 17 4 12"></polyline></svg>`;
+const pauseIcon = `<i class="bi bi-pause-fill"></i>`;
+const resumeIcon = `<i class="bi bi-play-fill"></i>`;
+const copyIconSvg = `<i class="bi bi-clipboard"></i>`;
+const checkIconSvg = `<i class="bi bi-check2"></i>`;
 $("btnPause").addEventListener("click", async () => {
   paused = !paused;
   await window.pos.submitControl(paused ? "pause" : "resume");

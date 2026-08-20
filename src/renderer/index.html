@@ -6,6 +6,7 @@
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self';" />
     <title>PITX POS Transfer</title>
     <link rel="stylesheet" href="lib/bootstrap.min.css" />
+    <link rel="stylesheet" href="lib/bootstrap-icons.min.css" />
     <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
@@ -21,10 +22,12 @@
       <div class="d-flex align-items-center gap-2">
           <nav class="tabs" id="tabs">
             <button class="tab active" data-tab="transfer">Transfer</button>
-            <button class="tab" data-tab="settings">Settings</button>
+             <button class="tab icon" data-tab="settings" title="Settings">
+               <i class="bi bi-gear"></i>
+             </button>
           </nav>
          <button class="btn ghost sm" id="btnThemeToggle" title="Toggle dark mode">
-           <svg id="themeIcon" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 12.79A9 9 0 0 1 11.21 3 7 7 0 0 0 21 12.79z"></path></svg>
+           <i id="themeIcon" class="bi bi-moon"></i>
          </button>
        </div>
      </header>
@@ -71,10 +74,10 @@
             <button class="btn success" id="btnSubmit">Submit Pending</button>
             <button class="btn success" id="btnSubmitToday">Submit Today</button>
             <button class="btn warning hidden" id="btnPause" title="Pause">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 4h4v16H6zm8 0h4v16h-4z"/></svg>
+              <i class="bi bi-pause-fill"></i>
             </button>
             <button class="btn danger hidden" id="btnAbort" title="Stop">
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="currentColor"><path d="M6 6h12v12H6z"/></svg>
+              <i class="bi bi-stop-fill"></i>
             </button>
             <span class="spinner hidden" id="spinner"></span>
             <span class="status-text" id="statusText">Ready</span>
