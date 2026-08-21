@@ -266,17 +266,17 @@ tbody tr.selected { background: var(--primary-dim); }
   display: flex; align-items: center; justify-content: center;
 }
 .modal-overlay.hidden { display: none; }
-.modal {
+.dialog {
   background: var(--card); border-radius: var(--radius); box-shadow: var(--shadow);
   width: 92%; max-width: 760px; max-height: 82vh; display: flex; flex-direction: column;
 }
-.modal.modal-sm {
+.dialog.dialog-sm {
   width: auto;
   min-width: 300px;
   max-width: 420px;
 }
-.modal.modal-sm .modal-body { padding: 16px 20px; }
-.modal.modal-sm .modal-body p { margin: 0; line-height: 1.5; }
+.dialog.dialog-sm .modal-body { padding: 16px 20px; }
+.dialog.dialog-sm .modal-body p { margin: 0; line-height: 1.5; }
 .modal-header {
   display: flex; align-items: center; justify-content: space-between;
   padding: 14px 18px; border-bottom: 1px solid var(--card-border);
@@ -342,7 +342,43 @@ tbody tr.selected { background: var(--primary-dim); }
 }
 
 /* ---------- Dated Submission pipeline ---------- */
-.dated-controls-card .filters { display: flex; align-items: flex-end; gap: 12px; flex-wrap: wrap; }
+.dated-top-row {
+  display: flex;
+  gap: 14px;
+  align-items: stretch;
+}
+.dated-top-row .dated-progress-card {
+  flex: 1 1 55%;
+}
+.dated-top-row .dated-controls-card {
+  flex: 1 1 45%;
+}
+.dated-top-row .dated-controls-card .filters {
+  display: flex;
+  align-items: flex-end;
+  gap: 10px;
+  flex-wrap: wrap;
+}
+.dated-top-row .dated-controls-card .field {
+  flex: 0 0 auto;
+}
+.dated-top-row .dated-controls-card .status-text {
+  align-self: center;
+}
+.dated-top-row .dated-controls-card .dated-spacer {
+  flex: 1 1 auto;
+}
+.dated-top-row .dated-controls-card .dated-actions {
+  display: flex;
+  gap: 8px;
+  align-items: flex-end;
+}
+
+@media (max-width: 768px) {
+  .dated-top-row {
+    flex-direction: column;
+  }
+}
 
 .pipeline-card { overflow: visible; }
 .pipeline { display: flex; align-items: stretch; gap: 14px; }

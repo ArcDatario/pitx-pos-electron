@@ -20,10 +20,10 @@
         </div>
       </div>
       <div class="d-flex align-items-center gap-2">
-          <nav class="tabs" id="tabs">
-            <button class="tab active" data-tab="transfer">Transfer</button>
-            <button class="tab" data-tab="dated">Dated Submission</button>
-             <button class="tab icon" data-tab="settings" title="Settings">
+           <nav class="tabs" id="tabs">
+             <button class="tab active" data-tab="dated">Home</button>
+             <button class="tab" data-tab="transfer">Transaction</button>
+              <button class="tab icon" data-tab="settings" title="Settings">
                <i class="bi bi-gear"></i>
              </button>
           </nav>
@@ -33,9 +33,9 @@
        </div>
      </header>
 
-    <main class="content">
-      <!-- TRANSFER TAB -->
-      <section class="panel active" id="panel-transfer">
+      <main class="content">
+        <!-- TRANSACTION TAB -->
+        <section class="panel" id="panel-transfer">
         <div class="stats-row" id="statusStats"></div>
         <div class="stats-row muted" id="summaryStats"></div>
 
@@ -119,29 +119,35 @@
         </div>
       </section>
 
-      <!-- DATED SUBMISSION TAB -->
-      <section class="panel" id="panel-dated">
-        <div class="card dated-controls-card">
-          <div class="filters">
-            <div class="field">
-              <label>Date</label>
-              <input id="datedDate" type="date" />
+      <!-- HOME TAB -->
+      <section class="panel active" id="panel-dated">
+        <div class="dated-top-row">
+          <div class="card dated-progress-card">
+            <div class="dated-progress" id="datedProgressWrap">
+              <div class="progress-track">
+                <div class="progress-fill" id="datedProgressFill"></div>
+              </div>
+              <div class="progress-label" id="datedProgressLabel">Waiting to start</div>
             </div>
-            <div class="field grow"></div>
-            <button class="btn success" id="btnDatedSubmit">Submit</button>
-            <button class="btn warning hidden" id="btnDatedPause" title="Pause">
-              <i class="bi bi-pause-fill"></i>
-            </button>
-            <button class="btn danger hidden" id="btnDatedAbort" title="Stop">
-              <i class="bi bi-stop-fill"></i>
-            </button>
-            <span class="status-text" id="datedStatusText">Ready</span>
           </div>
-          <div class="dated-progress" id="datedProgressWrap">
-            <div class="progress-track">
-              <div class="progress-fill" id="datedProgressFill"></div>
+          <div class="card dated-controls-card">
+            <div class="filters">
+              <div class="field">
+                <label>Date</label>
+                <input id="datedDate" type="date" />
+              </div>
+              <span class="status-text" id="datedStatusText">Ready</span>
+              <div class="dated-spacer"></div>
+              <div class="dated-actions">
+                <button class="btn success" id="btnDatedSubmit">Submit</button>
+                <button class="btn warning hidden" id="btnDatedPause" title="Pause">
+                  <i class="bi bi-pause-fill"></i>
+                </button>
+                <button class="btn danger hidden" id="btnDatedAbort" title="Stop">
+                  <i class="bi bi-stop-fill"></i>
+                </button>
+              </div>
             </div>
-            <div class="progress-label" id="datedProgressLabel">Waiting to start</div>
           </div>
         </div>
 
@@ -258,45 +264,45 @@
       </section>
     </main>
   </div>
-   <div class="modal-overlay hidden" id="payloadModal">
-     <div class="modal">
-       <div class="modal-header">
-         <h3>Payload Preview</h3>
-         <button class="modal-close" id="btnCloseModal">&times;</button>
-       </div>
-       <pre class="modal-body" id="payloadPreview"></pre>
-       <div class="modal-footer">
-         <button class="btn primary" id="btnCopyModal">Copy</button>
-       </div>
-     </div>
-    </div>
-    <div class="modal-overlay hidden" id="viewModal">
-      <div class="modal">
+    <div class="modal-overlay hidden" id="payloadModal">
+      <div class="dialog">
         <div class="modal-header">
-          <h3>Transaction Details</h3>
-          <button class="modal-close" id="btnCloseViewModal">&times;</button>
+          <h3>Payload Preview</h3>
+          <button class="modal-close" id="btnCloseModal">&times;</button>
         </div>
-        <pre class="modal-body" id="viewModalBody"></pre>
+        <pre class="modal-body" id="payloadPreview"></pre>
         <div class="modal-footer">
-          <button class="btn primary" id="btnCloseViewModal2">Close</button>
+          <button class="btn primary" id="btnCopyModal">Copy</button>
         </div>
       </div>
-    </div>
-    <div class="modal-overlay hidden" id="datedConfirmModal">
-     <div class="modal modal-sm">
-       <div class="modal-header">
-         <h3>Submit Dated Transactions</h3>
-         <button class="modal-close" id="btnCloseDatedConfirmModal">&times;</button>
-       </div>
-       <div class="modal-body">
-         <p>Are you sure you want to submit the transactions for <strong id="datedConfirmDate"></strong>? This will retrieve, build the payload for, and submit every pending transaction for that date.</p>
-       </div>
-       <div class="modal-footer">
-         <button class="btn ghost" id="btnDatedConfirmCancel">Cancel</button>
-         <button class="btn success" id="btnDatedConfirmSubmit">Confirm &amp; Submit</button>
+     </div>
+     <div class="modal-overlay hidden" id="viewModal">
+       <div class="dialog">
+         <div class="modal-header">
+           <h3>Transaction Details</h3>
+           <button class="modal-close" id="btnCloseViewModal">&times;</button>
+         </div>
+         <pre class="modal-body" id="viewModalBody"></pre>
+         <div class="modal-footer">
+           <button class="btn primary" id="btnCloseViewModal2">Close</button>
+         </div>
        </div>
      </div>
-    </div>
+     <div class="modal-overlay hidden" id="datedConfirmModal">
+      <div class="dialog dialog-sm">
+        <div class="modal-header">
+          <h3>Submit Dated Transactions</h3>
+          <button class="modal-close" id="btnCloseDatedConfirmModal">&times;</button>
+        </div>
+        <div class="modal-body">
+          <p>Are you sure you want to submit the transactions for <strong id="datedConfirmDate"></strong>? This will retrieve, build the payload for, and submit every pending transaction for that date.</p>
+        </div>
+        <div class="modal-footer">
+          <button class="btn ghost" id="btnDatedConfirmCancel">Cancel</button>
+          <button class="btn success" id="btnDatedConfirmSubmit">Confirm &amp; Submit</button>
+        </div>
+      </div>
+     </div>
     <div class="context-menu hidden" id="contextMenu">
       <div class="ctx-item" id="ctxView">View</div>
       <div class="ctx-item" id="ctxSubmit">Submit</div>
