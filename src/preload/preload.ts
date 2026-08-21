@@ -18,6 +18,7 @@ contextBridge.exposeInMainWorld("pos", {
   submitByDateRange: (start: string, end: string) =>
     ipcRenderer.invoke("submit:by-date-range", { start, end }),
   submitToday: () => ipcRenderer.invoke("submit:today"),
+  submitDated: (date: string) => ipcRenderer.invoke("submit:dated", { date }),
   submitControl: (action: "pause" | "resume" | "abort") =>
     ipcRenderer.invoke("submit:control", action),
   resubmit: (guestCheckId: string) => ipcRenderer.invoke("submit:resubmit", guestCheckId),

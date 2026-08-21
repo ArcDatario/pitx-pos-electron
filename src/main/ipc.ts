@@ -28,6 +28,17 @@ function eventTypeFor(outcome: tsms.Outcome): string {
   return "failed_terminal";
 }
 
+/** Same void-detection rule as tsms.ts::submitOne (VOIDTOTAL_QTY/VOIDTOTAL_AMT
+ * != 0), duplicated locally so the renderer can be told up front which lane
+ * (Submitted vs Voided) a record is headed for once it succeeds. */
+function isVoidRecord(rec: Record<string, any>): boolean {
+  const upper: Record<string, any> = {};
+  for (const k of Object.keys(rec)) upper[k.toUpperCase()] = rec[k];
+  const voidQty = Number(upper.VOIDTOTAL_QTY ?? 0);
+  const voidAmt = Number(upper.VOIDTOTAL_AMT ?? 0);
+  return voidQty !== 0 || voidAmt !== 0;
+}
+
 export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   ipcMain.handle("config:get", () => loadConfig());
 
@@ -106,7 +117,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   ): Promise<{ total: number; processed: number; successCount: number; failCount: number; aborted: boolean }> {
     const records = await db.fetchPendingByDate(cfg, start, end);
     const total = records.length;
-    send(win, "submit:event", { type: "phase", message: `Found ${total} record(s) to submit` });
+    send(win, "submit:event", { type: "submit_start", total, message: `Found ${total} record(s) to submit` });
 
     let processed = 0;
     let successCount = 0;
@@ -129,11 +140,13 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
 
       const rec = records[i];
       const guestCheckId = rec.GUESTCHECKID;
+      const isVoid = isVoidRecord(rec);
       send(win, "submit:event", {
         type: "sending",
         guest_check_id: guestCheckId,
         index: i + 1,
         total,
+        void: isVoid,
         message: `Sending ${guestCheckId}`,
       });
 
@@ -171,6 +184,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
       send(win, "submit:event", {
         type: eventTypeFor(result.outcome),
         guest_check_id: guestCheckId,
+        void: isVoid,
         message: `${guestCheckId}: ${result.message}`,
       });
 
@@ -178,11 +192,65 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     }
 
     send(win, "submit:event", {
-      type: failCount === 0 ? "success" : "failed_retry",
+      type: "submit_done",
+      total,
+      processed,
+      successCount,
+      failCount,
+      aborted: controller.abort,
       message: `Done: ${successCount} submitted, ${failCount} failed, ${processed}/${total} processed`,
     });
 
     return { total, processed, successCount, failCount, aborted: controller.abort };
+  }
+
+  /**
+   * Shared insert-then-submit pipeline for a single business date -- this is
+   * what both "Submit Today" and the "Dated Submission" tab run. Emits
+   * distinct insert_start/insert_done/insert_failed events around the
+   * db.transfer() insert step (so the renderer's left pipeline stage can
+   * light up independently of the per-record submit events), then delegates
+   * to runSubmitBatch for the actual submission, then emits a final
+   * batch_done event summarizing the whole insert+submit run.
+   */
+  async function runDatedSubmission(
+    cfg: AppConfig,
+    win: BrowserWindow,
+    date: string
+  ): Promise<{ date: string; inserted: number; total: number; processed: number; successCount: number; failCount: number; aborted: boolean }> {
+    controller = { abort: false, paused: false, pauseNotified: false };
+
+    send(win, "submit:event", { type: "insert_start", date, message: `Fetching transactions for ${date}...` });
+
+    let inserted = 0;
+    try {
+      inserted = await db.transfer(cfg, date, date);
+      send(win, "submit:event", {
+        type: "insert_done",
+        date,
+        inserted,
+        message: `Inserted ${inserted} new transaction(s) for ${date}`,
+      });
+    } catch (e: any) {
+      send(win, "submit:event", {
+        type: "insert_failed",
+        date,
+        message: `Insert failed: ${e?.message ?? String(e)}`,
+      });
+      return { date, inserted, total: 0, processed: 0, successCount: 0, failCount: 0, aborted: false };
+    }
+
+    const result = await runSubmitBatch(cfg, win, date, date);
+
+    send(win, "submit:event", {
+      type: "batch_done",
+      date,
+      inserted,
+      ...result,
+      message: `Finished: ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`,
+    });
+
+    return { date, inserted, ...result };
   }
 
   ipcMain.handle(
@@ -196,48 +264,24 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   );
 
   /**
-   * "Submit Today" -- inserts today's transactions from v_salesdetails into
-   * the staging table (the same aggregation as "Get Data" / db:transfer),
-   * then immediately submits every pending row for that date through the
-   * normal batch submit path. The renderer shows a confirmation modal with
-   * today's date before invoking this, so on confirm this runs the whole
-   * insert + submit pipeline in one go and streams progress back via the
-   * usual submit:event channel.
+   * "Dated Submission" -- inserts the chosen business date's transactions
+   * from v_salesdetails into the staging table, then immediately submits
+   * every pending row for that date. The renderer's Dated Submission tab
+   * shows a confirmation modal with the chosen date before invoking this.
    */
+  ipcMain.handle("submit:dated", async (_e, args: { date: string }) => {
+    const cfg = loadConfig();
+    const win = getWindow();
+    return runDatedSubmission(cfg, win, args.date);
+  });
+
+  /** Back-compat wrapper: "Submit Today" is just a dated submission for
+   * today's date. */
   ipcMain.handle("submit:today", async () => {
     const cfg = loadConfig();
     const win = getWindow();
-    controller = { abort: false, paused: false, pauseNotified: false };
-
     const today = new Date().toISOString().slice(0, 10);
-    send(win, "submit:event", { type: "phase", message: `Submitting today's transactions for ${today}` });
-
-    // Step 1: insert today's transactions into the staging table.
-    send(win, "submit:event", { type: "phase", message: `Inserting today's transactions for ${today}...` });
-    let inserted = 0;
-    try {
-      inserted = await db.transfer(cfg, today, today);
-      send(win, "submit:event", {
-        type: "success",
-        message: `Inserted ${inserted} new transaction(s) for today`,
-      });
-    } catch (e: any) {
-      send(win, "submit:event", {
-        type: "failed_terminal",
-        message: `Insert failed: ${e?.message ?? String(e)}`,
-      });
-      return { today, inserted, total: 0, processed: 0, successCount: 0, failCount: 0, aborted: false };
-    }
-
-    // Step 2: submit every pending row for today through the shared batch.
-    const result = await runSubmitBatch(cfg, win, today, today);
-
-    send(win, "submit:event", {
-      type: "phase",
-      message: `Finished: ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`,
-    });
-
-    return { today, inserted, ...result };
+    return runDatedSubmission(cfg, win, today);
   });
 
   ipcMain.handle("submit:resubmit", async (_e, guestCheckId: string) => {

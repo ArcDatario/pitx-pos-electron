@@ -22,6 +22,7 @@
       <div class="d-flex align-items-center gap-2">
           <nav class="tabs" id="tabs">
             <button class="tab active" data-tab="transfer">Transfer</button>
+            <button class="tab" data-tab="dated">Dated Submission</button>
              <button class="tab icon" data-tab="settings" title="Settings">
                <i class="bi bi-gear"></i>
              </button>
@@ -72,7 +73,6 @@
             </div>
             <button class="btn secondary" id="btnGetData">Get Data</button>
             <button class="btn success" id="btnSubmit">Submit Pending</button>
-            <button class="btn success" id="btnSubmitToday">Submit Today</button>
             <button class="btn warning hidden" id="btnPause" title="Pause">
               <i class="bi bi-pause-fill"></i>
             </button>
@@ -116,6 +116,91 @@
             <button class="btn ghost sm" id="btnClearLog">Clear</button>
           </div>
           <div class="log-body" id="logBody"></div>
+        </div>
+      </section>
+
+      <!-- DATED SUBMISSION TAB -->
+      <section class="panel" id="panel-dated">
+        <div class="card dated-controls-card">
+          <div class="filters">
+            <div class="field">
+              <label>Date</label>
+              <input id="datedDate" type="date" />
+            </div>
+            <div class="field grow"></div>
+            <button class="btn success" id="btnDatedSubmit">Submit</button>
+            <button class="btn warning hidden" id="btnDatedPause" title="Pause">
+              <i class="bi bi-pause-fill"></i>
+            </button>
+            <button class="btn danger hidden" id="btnDatedAbort" title="Stop">
+              <i class="bi bi-stop-fill"></i>
+            </button>
+            <span class="status-text" id="datedStatusText">Ready</span>
+          </div>
+          <div class="dated-progress" id="datedProgressWrap">
+            <div class="progress-track">
+              <div class="progress-fill" id="datedProgressFill"></div>
+            </div>
+            <div class="progress-label" id="datedProgressLabel">Waiting to start</div>
+          </div>
+        </div>
+
+        <div class="card pipeline-card">
+          <div class="pipeline">
+            <div class="pipeline-stage stage-fetch" id="stageFetch">
+              <div class="stage-pulse"></div>
+              <div class="stage-icon"><i class="bi bi-cloud-download"></i></div>
+              <div class="stage-label">Getting Data</div>
+              <div class="stage-count" id="fetchCount">0 inserted</div>
+            </div>
+
+            <div class="pipeline-flow" id="flowFetchToBuild"><span></span><span></span><span></span></div>
+
+            <div class="pipeline-stage stage-build" id="stageBuild">
+              <div class="stage-pulse"></div>
+              <div class="stage-icon"><i class="bi bi-gear-wide-connected"></i></div>
+              <div class="stage-label">Building Payload</div>
+              <div class="stage-count" id="buildCount">0 in flight</div>
+              <div class="build-track" id="buildTrack"></div>
+            </div>
+
+            <div class="outcome-fan">
+              <div class="outcome-row">
+                <div class="outcome-connector conn-submitted" id="connSubmitted"><span class="pulse-dot"></span></div>
+                <div class="outcome-circle circle-submitted" id="circleSubmitted">
+                  <div class="circle-count" id="countSubmitted">0</div>
+                  <div class="circle-label">Submitted</div>
+                </div>
+              </div>
+              <div class="outcome-row">
+                <div class="outcome-connector conn-voided" id="connVoided"><span class="pulse-dot"></span></div>
+                <div class="outcome-circle circle-voided" id="circleVoided">
+                  <div class="circle-count" id="countVoided">0</div>
+                  <div class="circle-label">Void</div>
+                </div>
+              </div>
+              <div class="outcome-row">
+                <div class="outcome-connector conn-failed" id="connFailed"><span class="pulse-dot"></span></div>
+                <div class="outcome-circle circle-failed" id="circleFailed">
+                  <div class="circle-count" id="countFailed">0</div>
+                  <div class="circle-label">Failed</div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <div class="dated-completion hidden" id="datedCompletion">
+            <div class="completion-icon" id="datedCompletionIcon"><i class="bi bi-check-circle-fill"></i></div>
+            <div class="completion-text" id="datedCompletionText"></div>
+          </div>
+        </div>
+
+        <div class="card log-card">
+          <div class="log-header">
+            <span>Activity Log</span>
+            <button class="btn ghost sm" id="btnDatedClearLog">Clear</button>
+          </div>
+          <div class="log-body" id="datedLogBody"></div>
         </div>
       </section>
 
@@ -197,26 +282,18 @@
         </div>
       </div>
     </div>
-    <div class="modal-overlay hidden" id="confirmModal">
-     <div class="modal">
+    <div class="modal-overlay hidden" id="datedConfirmModal">
+     <div class="modal modal-sm">
        <div class="modal-header">
-         <h3>Submit Today's Transactions</h3>
-         <button class="modal-close" id="btnCloseConfirmModal">&times;</button>
+         <h3>Submit Dated Transactions</h3>
+         <button class="modal-close" id="btnCloseDatedConfirmModal">&times;</button>
        </div>
        <div class="modal-body">
-         <p>This will insert today's transactions and submit them to the TSMS API.</p>
-         <div class="confirm-field">
-           <span class="confirm-label">Date (Today)</span>
-           <span class="confirm-value" id="confirmTodayDate"></span>
-         </div>
-         <div class="confirm-field">
-           <span class="confirm-label">Range</span>
-           <span class="confirm-value" id="confirmDateRange"> — to — </span>
-         </div>
+         <p>Are you sure you want to submit the transactions for <strong id="datedConfirmDate"></strong>? This will retrieve, build the payload for, and submit every pending transaction for that date.</p>
        </div>
        <div class="modal-footer">
-         <button class="btn ghost" id="btnConfirmCancel">Cancel</button>
-         <button class="btn success" id="btnConfirmSubmit">Confirm &amp; Submit</button>
+         <button class="btn ghost" id="btnDatedConfirmCancel">Cancel</button>
+         <button class="btn success" id="btnDatedConfirmSubmit">Confirm &amp; Submit</button>
        </div>
      </div>
     </div>

@@ -362,59 +362,293 @@ $("btnAbort").addEventListener("click", async () => {
 });
 
 window.pos.onSubmitEvent((event) => {
+  if (!state.submitting) return;
   logEvent(event.type, event.message);
   if (event.type === "sending") {
     setStatus(`Sending ${event.guest_check_id} (${event.index}/${event.total})`);
   }
 });
 
-// ---------- Submit Today (insert today's data + submit) ----------
-function openConfirmModal() {
-  const today = new Date().toISOString().slice(0, 10);
-  $("confirmTodayDate").textContent = today;
-  $("confirmDateRange").textContent = `${today} to ${today}`;
-  $("confirmModal").classList.remove("hidden");
+// ---------- Dated Submission (insert a chosen date's data + submit, animated) ----------
+const datedState = { submitting: false, inFlight: {}, total: 0, processed: 0 };
+
+(function initDatedDateDefault() {
+  const el = $("datedDate");
+  if (el && !el.value) el.value = new Date().toISOString().slice(0, 10);
+})();
+
+function setDatedStatus(msg) {
+  $("datedStatusText").textContent = msg;
 }
 
-function closeConfirmModal() {
-  $("confirmModal").classList.add("hidden");
+function datedLog(type, message) {
+  const body = $("datedLogBody");
+  const line = document.createElement("div");
+  line.className = `log-line ${type}`;
+  line.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+  body.appendChild(line);
+  body.scrollTop = body.scrollHeight;
+}
+$("btnDatedClearLog").addEventListener("click", () => {
+  $("datedLogBody").innerHTML = "";
+});
+
+function hideDatedCompletion() {
+  const el = $("datedCompletion");
+  el.classList.add("hidden");
+  el.classList.remove("state-success", "state-attention", "state-error");
 }
 
-$("btnSubmitToday").addEventListener("click", () => {
-  if (state.submitting) {
-    setStatus("A submission is already in progress");
+function showDatedCompletion(state_, message) {
+  const el = $("datedCompletion");
+  el.classList.remove("hidden", "state-success", "state-attention", "state-error");
+  el.classList.add(`state-${state_}`);
+  const icon = $("datedCompletionIcon");
+  icon.innerHTML =
+    state_ === "success"
+      ? `<i class="bi bi-check-circle-fill"></i>`
+      : state_ === "attention"
+      ? `<i class="bi bi-exclamation-triangle-fill"></i>`
+      : `<i class="bi bi-x-circle-fill"></i>`;
+  $("datedCompletionText").textContent = message;
+}
+
+function setProgress(percent, label, mode) {
+  const fill = $("datedProgressFill");
+  fill.classList.remove("indeterminate", "done", "error");
+  if (mode) fill.classList.add(mode);
+  fill.style.width = `${Math.max(0, Math.min(100, percent))}%`;
+  $("datedProgressLabel").textContent = label;
+}
+
+function setProgressIndeterminate(label) {
+  const fill = $("datedProgressFill");
+  fill.classList.remove("done", "error");
+  fill.classList.add("indeterminate");
+  fill.style.width = "";
+  $("datedProgressLabel").textContent = label;
+}
+
+function resetProgress() {
+  const fill = $("datedProgressFill");
+  fill.classList.remove("indeterminate", "done", "error");
+  fill.style.width = "0%";
+  $("datedProgressLabel").textContent = "Waiting to start";
+}
+
+function resetPipeline() {
+  $("stageFetch").classList.remove("active");
+  $("stageBuild").classList.remove("active");
+  $("flowFetchToBuild").classList.remove("active");
+  $("fetchCount").textContent = "0 inserted";
+  $("buildCount").textContent = "0 in flight";
+  $("buildTrack").innerHTML = "";
+  ["Submitted", "Voided", "Failed"].forEach((lane) => {
+    $(`count${lane}`).textContent = "0";
+    $(`conn${lane}`).classList.remove("pulse");
+    $(`circle${lane}`).classList.remove("bump");
+  });
+  $("circleFailed").classList.remove("attention");
+  hideDatedCompletion();
+  resetProgress();
+  datedState.inFlight = {};
+  datedState.total = 0;
+  datedState.processed = 0;
+}
+
+function toggleDatedSubmittingUi(on) {
+  datedState.submitting = on;
+  $("btnDatedPause").classList.toggle("hidden", !on);
+  $("btnDatedAbort").classList.toggle("hidden", !on);
+  $("btnDatedSubmit").classList.toggle("hidden", on);
+  $("datedDate").disabled = on;
+}
+
+function buildChipId(guestCheckId) {
+  return `chip-${guestCheckId}`.replace(/[^a-zA-Z0-9_-]/g, "_");
+}
+
+function addBuildChip(guestCheckId) {
+  const track = $("buildTrack");
+  const chip = document.createElement("div");
+  chip.className = "build-chip";
+  chip.id = buildChipId(guestCheckId);
+  chip.textContent = guestCheckId;
+  track.appendChild(chip);
+  while (track.children.length > 6) track.removeChild(track.firstChild);
+  datedState.inFlight[guestCheckId] = true;
+  $("buildCount").textContent = `${Object.keys(datedState.inFlight).length} in flight`;
+}
+
+function bumpProgress() {
+  if (datedState.total <= 0) return;
+  datedState.processed++;
+  const pct = Math.round((datedState.processed / datedState.total) * 100);
+  setProgress(pct, `${datedState.processed} / ${datedState.total} (${pct}%)`);
+}
+
+function pulseOutcome(lane) {
+  const conn = $(`conn${lane}`);
+  conn.classList.remove("pulse");
+  void conn.offsetWidth; // restart animation even if it fires again quickly
+  conn.classList.add("pulse");
+
+  const countEl = $(`count${lane}`);
+  countEl.textContent = String(Number(countEl.textContent || "0") + 1);
+
+  const circle = $(`circle${lane}`);
+  circle.classList.remove("bump");
+  void circle.offsetWidth;
+  circle.classList.add("bump");
+}
+
+function resolveBuildChip(guestCheckId, lane) {
+  const chip = document.getElementById(buildChipId(guestCheckId));
+  if (chip) chip.remove();
+  delete datedState.inFlight[guestCheckId];
+  $("buildCount").textContent = `${Object.keys(datedState.inFlight).length} in flight`;
+
+  pulseOutcome(lane);
+}
+
+window.pos.onSubmitEvent((event) => {
+  if (!datedState.submitting) return;
+
+  switch (event.type) {
+    case "insert_start":
+      $("stageFetch").classList.add("active");
+      $("flowFetchToBuild").classList.add("active");
+      setDatedStatus(event.message);
+      setProgressIndeterminate("Fetching transactions...");
+      datedLog("phase", event.message);
+      break;
+    case "insert_done":
+      $("stageFetch").classList.remove("active");
+      $("fetchCount").textContent = `${event.inserted} inserted`;
+      setDatedStatus(event.message);
+      setProgressIndeterminate("Preparing submission...");
+      datedLog("success", event.message);
+      break;
+    case "insert_failed":
+      $("stageFetch").classList.remove("active");
+      $("flowFetchToBuild").classList.remove("active");
+      setDatedStatus(event.message);
+      setProgress(100, event.message, "error");
+      datedLog("error", event.message);
+      break;
+    case "submit_start":
+      $("stageBuild").classList.add("active");
+      datedState.total = event.total || 0;
+      datedState.processed = 0;
+      if (datedState.total === 0) {
+        setProgress(100, "No pending records for this date", "done");
+      } else {
+        setProgress(0, `0 / ${datedState.total} (0%)`);
+      }
+      datedLog("phase", event.message);
+      break;
+    case "sending":
+      $("flowFetchToBuild").classList.remove("active");
+      addBuildChip(event.guest_check_id);
+      setDatedStatus(`Building payload for ${event.guest_check_id} (${event.index}/${event.total})`);
+      break;
+    case "success":
+      resolveBuildChip(event.guest_check_id, event.void ? "Voided" : "Submitted");
+      datedLog(event.void ? "warning" : "success", event.message);
+      bumpProgress();
+      break;
+    case "rate_limited":
+    case "failed_retry":
+    case "failed_terminal":
+      resolveBuildChip(event.guest_check_id, "Failed");
+      datedLog(event.type, event.message);
+      bumpProgress();
+      break;
+    case "submit_done":
+      $("stageBuild").classList.remove("active");
+      if (datedState.total > 0) {
+        setProgress(100, `${datedState.total} / ${datedState.total} (100%)`, "done");
+      }
+      datedLog("phase", event.message);
+      break;
+    case "batch_done":
+      datedLog("phase", event.message);
+      break;
+    case "phase":
+      datedLog("phase", event.message);
+      break;
+  }
+});
+
+let datedPaused = false;
+$("btnDatedPause").addEventListener("click", async () => {
+  datedPaused = !datedPaused;
+  await window.pos.submitControl(datedPaused ? "pause" : "resume");
+  $("btnDatedPause").innerHTML = datedPaused ? resumeIcon : pauseIcon;
+  $("btnDatedPause").title = datedPaused ? "Resume" : "Pause";
+});
+$("btnDatedAbort").addEventListener("click", async () => {
+  await window.pos.submitControl("abort");
+  setDatedStatus("Aborting...");
+});
+
+function openDatedConfirmModal() {
+  const date = $("datedDate").value || new Date().toISOString().slice(0, 10);
+  $("datedConfirmDate").textContent = date;
+  $("datedConfirmModal").classList.remove("hidden");
+}
+function closeDatedConfirmModal() {
+  $("datedConfirmModal").classList.add("hidden");
+}
+
+$("btnDatedSubmit").addEventListener("click", () => {
+  if (datedState.submitting) {
+    setDatedStatus("A submission is already in progress");
     return;
   }
-  openConfirmModal();
+  if (!$("datedDate").value) {
+    setDatedStatus("Pick a date first");
+    return;
+  }
+  openDatedConfirmModal();
 });
 
-$("confirmModal").addEventListener("click", (e) => {
-  if (e.target === $("confirmModal")) closeConfirmModal();
+$("datedConfirmModal").addEventListener("click", (e) => {
+  if (e.target === $("datedConfirmModal")) closeDatedConfirmModal();
 });
-$("btnCloseConfirmModal").addEventListener("click", closeConfirmModal);
-$("btnConfirmCancel").addEventListener("click", closeConfirmModal);
+$("btnCloseDatedConfirmModal").addEventListener("click", closeDatedConfirmModal);
+$("btnDatedConfirmCancel").addEventListener("click", closeDatedConfirmModal);
 
-$("btnConfirmSubmit").addEventListener("click", async () => {
-  closeConfirmModal();
-  toggleSubmittingUi(true);
-  setStatus("Submitting today...");
-  logEvent("phase", "Submit Today: inserting today's transactions then submitting");
+$("btnDatedConfirmSubmit").addEventListener("click", async () => {
+  const date = $("datedDate").value;
+  closeDatedConfirmModal();
+  resetPipeline();
+  toggleDatedSubmittingUi(true);
+  setDatedStatus(`Submitting for ${date}...`);
+  datedLog("phase", `Dated Submission started for ${date}`);
   try {
-    const result = await window.pos.submitToday();
-    const inserted = result.inserted ?? 0;
-    setStatus(
-      `Done: ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed` +
-        (result.aborted ? " (aborted)" : "")
-    );
-    logEvent(
-      "success",
-      `Submit Today complete — ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`
-    );
+    const result = await window.pos.submitDated(date);
+    const summary = `${result.inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`;
+    setDatedStatus(`Done: ${summary}` + (result.aborted ? " (aborted)" : ""));
+    datedLog("success", `Dated Submission complete — ${summary}`);
+
+    if (result.aborted) {
+      showDatedCompletion("attention", `Submission aborted — ${summary}`);
+    } else if (result.failCount > 0) {
+      $("circleFailed").classList.add("attention");
+      showDatedCompletion("attention", `${result.failCount} transaction(s) failed and need attention — ${summary}`);
+    } else {
+      showDatedCompletion("success", `All transactions submitted successfully — ${summary}`);
+    }
   } catch (e) {
-    logEvent("error", `Submit Today failed: ${e.message}`);
-    setStatus("Submit Today failed");
+    datedLog("error", `Dated Submission failed: ${e.message}`);
+    setDatedStatus("Dated Submission failed");
+    showDatedCompletion("error", `Dated Submission failed: ${e.message}`);
   } finally {
-    toggleSubmittingUi(false);
+    toggleDatedSubmittingUi(false);
+    $("stageFetch").classList.remove("active");
+    $("stageBuild").classList.remove("active");
+    $("flowFetchToBuild").classList.remove("active");
     refreshAll();
   }
 });
