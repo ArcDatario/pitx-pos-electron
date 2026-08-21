@@ -140,6 +140,9 @@ async function ensureColumnsExist(p: ConnectionPool): Promise<void> {
  * 1:1 port of tsms_pos/pos.py::transfer(). Aggregates dbo.v_salesdetails into
  * dbo.dts_pitx_payload for [startDate, endDate], handling voided FCRInvNumbers
  * (negative "Item Sale" rows) as their own void records.
+ * 
+ * UPSERT logic: If receipt_no exists and is_void = 1, UPDATE voidtotal_amt/voidtotal_qty.
+ * If receipt_no doesn't exist, INSERT new record.
  */
 export async function transfer(
   cfg: AppConfig,
@@ -225,7 +228,9 @@ export async function transfer(
                 THEN (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) * 0.10
                 ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessSoloparent ELSE 0 END), 0))
             END AS lessSoloparent,
+            -- voidtotal_amt: Capture negative amounts
             SUM(ISNULL(ABS(CASE WHEN v.amt < 0 THEN v.amt ELSE 0 END), 0)) AS voidtotal_amt,
+            -- voidtotal_qty: Capture negative quantities
             SUM(ISNULL(ABS(CASE WHEN v.amt < 0 THEN v.qty ELSE 0 END), 0)) AS voidtotal_qty,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.srvc_amt ELSE 0 END), 0)) AS gc_sales,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.GC_excess ELSE 0 END), 0)) AS gc_excess,
@@ -266,7 +271,7 @@ export async function transfer(
                 ELSE 0
             END AS vatable_sales,
             -- sc_vat_excempt_sales: 
-            -- For Solo Parent: use the calculated netsales (39.38)
+            -- For Solo Parent: use the calculated netsales
             -- For other VAT-exempt (PWD, Senior Citizen, Zero Rated): source Netsales
             -- For VATable transactions: 0
             CASE
@@ -277,7 +282,14 @@ export async function transfer(
                 THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
-            0 AS other_tax
+            0 AS other_tax,
+            -- Flag to identify if this is a void transaction (has negative values)
+            CASE 
+                WHEN SUM(ISNULL(ABS(CASE WHEN v.amt < 0 THEN v.amt ELSE 0 END), 0)) > 0 
+                     OR SUM(ISNULL(ABS(CASE WHEN v.amt < 0 THEN v.qty ELSE 0 END), 0)) > 0
+                THEN 1 
+                ELSE 0 
+            END AS is_void
         FROM dbo.v_salesdetails v
         INNER JOIN VoidFCR vf ON v.FCRInvNumber = vf.FCRInvNumber
         LEFT JOIN SoloParentDiscount sp ON v.FCRInvNumber = sp.FCRInvNumber
@@ -386,7 +398,7 @@ export async function transfer(
                 ELSE 0
             END AS vatable_sales,
             -- sc_vat_excempt_sales: 
-            -- For Solo Parent: use the calculated netsales (39.38)
+            -- For Solo Parent: use the calculated netsales
             -- For other VAT-exempt (PWD, Senior Citizen, Zero Rated): source Netsales
             -- For VATable transactions: 0
             CASE
@@ -397,7 +409,8 @@ export async function transfer(
                 THEN SUM(ISNULL(ABS(v.Netsales), 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
-            0 AS other_tax
+            0 AS other_tax,
+            0 AS is_void
         FROM dbo.v_salesdetails v
         LEFT JOIN VoidFCR vf ON v.FCRInvNumber = vf.FCRInvNumber
         LEFT JOIN SoloParentDiscount sp ON v.FCRInvNumber = sp.FCRInvNumber
@@ -418,32 +431,54 @@ export async function transfer(
             netsales, vat_12, lessvat, lessPWD, lessSC, lessEMP, lessNtnlAth, lessSoloparent,
             voidtotal_amt, voidtotal_qty, gc_sales, gc_excess, otherdiscount,
             vat, gross_sales, vatable_sales, sc_vat_excempt_sales, other_tax,
+            is_void,
             ROW_NUMBER() OVER (PARTITION BY receipt_no ORDER BY transdatetime DESC) AS rn
         FROM CombinedData
         WHERE receipt_no IS NOT NULL AND receipt_no <> ''
     )
-    INSERT INTO dbo.dts_pitx_payload (
-        businessdate, transdatetime, locationname, storenum,
-        GUESTCHECKID, ordertypename, receipt_no,
-        netsales, vat_12, lessvat, lessPWD, lessSC, lessEMP,
-        lessNtnlAth, lessSoloparent, voidtotal_amt, voidtotal_qty,
-        gc_sales, gc_excess, otherdiscount,
-        vat, gross_sales, vatable_sales, sc_vat_excempt_sales, other_tax,
-        status, updated_at
-    )
-    SELECT
-        BusinessDate, transdatetime, @p_locationname, @p_storenum,
-        guestcheckid, ordertypename, receipt_no,
-        netsales, vat_12, lessvat, lessPWD, lessSC, lessEMP,
-        lessNtnlAth, lessSoloparent, voidtotal_amt, voidtotal_qty,
-        gc_sales, gc_excess, otherdiscount,
-        vat, gross_sales, vatable_sales, sc_vat_excempt_sales, other_tax,
-        'pending', SYSDATETIME()
-    FROM DeduplicatedData
-    WHERE rn = 1
-      AND NOT EXISTS (
-          SELECT 1 FROM dbo.dts_pitx_payload t WHERE t.receipt_no = DeduplicatedData.receipt_no
-      );
+    -- UPSERT: INSERT if not exists, UPDATE if exists with void values
+    MERGE INTO dbo.dts_pitx_payload AS target
+    USING (
+        SELECT
+            BusinessDate, transdatetime, @p_locationname AS locationname, @p_storenum AS storenum,
+            guestcheckid AS GUESTCHECKID, ordertypename, receipt_no,
+            netsales, vat_12, lessvat, lessPWD, lessSC, lessEMP,
+            lessNtnlAth, lessSoloparent, voidtotal_amt, voidtotal_qty,
+            gc_sales, gc_excess, otherdiscount,
+            vat, gross_sales, vatable_sales, sc_vat_excempt_sales, other_tax,
+            is_void,
+            'pending' AS status,
+            SYSDATETIME() AS updated_at
+        FROM DeduplicatedData
+        WHERE rn = 1
+    ) AS source
+    ON target.receipt_no = source.receipt_no
+    WHEN MATCHED AND source.is_void = 1 THEN
+        -- UPDATE only the void-related columns when a void transaction is detected
+        UPDATE SET
+            target.voidtotal_amt = source.voidtotal_amt,
+            target.voidtotal_qty = source.voidtotal_qty,
+            target.updated_at = SYSDATETIME()
+    WHEN NOT MATCHED THEN
+        -- INSERT new record
+        INSERT (
+            businessdate, transdatetime, locationname, storenum,
+            GUESTCHECKID, ordertypename, receipt_no,
+            netsales, vat_12, lessvat, lessPWD, lessSC, lessEMP,
+            lessNtnlAth, lessSoloparent, voidtotal_amt, voidtotal_qty,
+            gc_sales, gc_excess, otherdiscount,
+            vat, gross_sales, vatable_sales, sc_vat_excempt_sales, other_tax,
+            status, updated_at
+        )
+        VALUES (
+            source.BusinessDate, source.transdatetime, source.locationname, source.storenum,
+            source.GUESTCHECKID, source.ordertypename, source.receipt_no,
+            source.netsales, source.vat_12, source.lessvat, source.lessPWD, source.lessSC, source.lessEMP,
+            source.lessNtnlAth, source.lessSoloparent, source.voidtotal_amt, source.voidtotal_qty,
+            source.gc_sales, source.gc_excess, source.otherdiscount,
+            source.vat, source.gross_sales, source.vatable_sales, source.sc_vat_excempt_sales, source.other_tax,
+            source.status, source.updated_at
+        );
 
     SELECT @@ROWCOUNT AS InsertedCount;
   `;

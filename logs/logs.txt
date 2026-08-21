@@ -421,3 +421,79 @@
   "name": "ConnectionError"
 }
 [2026-08-21T06:34:04.779Z] Logger initialized
+[2026-08-21T07:54:16.256Z] Logger initialized
+[2026-08-21T08:01:20.741Z] Logger initialized
+[2026-08-21T08:01:37.122Z] [INFO] [000000000648] Successfully marked as submitted.
+[2026-08-21T08:01:39.086Z] [INFO] [000000000649] Successfully marked as submitted.
+[2026-08-21T08:01:40.956Z] [INFO] [000000000650] Successfully marked as submitted.
+[2026-08-21T08:01:43.498Z] [INFO] [000000000651] Successfully marked as submitted.
+[2026-08-21T08:01:45.293Z] [INFO] [000000000652] Successfully marked as submitted.
+[2026-08-21T08:01:45.295Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:01:46.562Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:01:51.708Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:01:56.831Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:02:01.940Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:02:04.552Z] [INFO] [000000000653] Successfully marked as submitted.
+[2026-08-21T08:02:34.979Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:02:36.100Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:02:41.199Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:02:46.307Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:02:51.406Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:03:39.300Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:03:40.321Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:03:45.405Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:03:50.514Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:03:56.426Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:04:39.316Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:04:40.361Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:04:45.454Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:04:50.548Z] [WARN] Void for 60aa6e7a-6fc6-4dcd-aead-84f046653243 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:04:55.648Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:04:59.958Z] [INFO] [000000000648] Successfully marked as submitted.
+[2026-08-21T08:05:01.574Z] [INFO] [000000000649] Successfully marked as submitted.
+[2026-08-21T08:05:03.196Z] [INFO] [000000000650] Successfully marked as submitted.
+[2026-08-21T08:05:04.766Z] [INFO] [000000000651] Successfully marked as submitted.
+[2026-08-21T08:05:06.372Z] [INFO] [000000000652] Successfully marked as submitted.
+[2026-08-21T08:05:06.373Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:05:07.550Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:05:12.651Z] [WARN] Void for 6901617b-9390-4adb-954d-f54230bc7a3e not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:05:17.769Z] [WARN] Void for 6901617b-9390-4adb-954d-f54230bc7a3e not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:05:22.856Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:05:24.431Z] [INFO] [000000000653] Successfully marked as submitted.
+[2026-08-21T08:05:48.139Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:05:49.265Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:05:54.360Z] [WARN] Void for 6901617b-9390-4adb-954d-f54230bc7a3e not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:05:59.455Z] [WARN] Void for 6901617b-9390-4adb-954d-f54230bc7a3e not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:06:04.537Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:28:53.034Z] Logger initialized
+[2026-08-21T08:29:19.222Z] [INFO] [000000000648] Successfully marked as submitted.
+[2026-08-21T08:29:20.953Z] [INFO] [000000000649] Successfully marked as submitted.
+[2026-08-21T08:29:22.819Z] [INFO] [000000000650] Successfully marked as submitted.
+[2026-08-21T08:29:24.488Z] [INFO] [000000000651] Successfully marked as submitted.
+[2026-08-21T08:29:26.139Z] [INFO] [000000000652] Successfully marked as submitted.
+[2026-08-21T08:29:26.140Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:29:27.225Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:29:32.308Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:29:37.399Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:29:42.479Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:29:44.222Z] [INFO] [000000000653] Successfully marked as submitted.
+[2026-08-21T08:30:22.088Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:30:23.915Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:30:29.009Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:30:34.156Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:30:39.298Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:31:22.141Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:31:23.459Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:31:28.544Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:31:33.648Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:31:38.758Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:32:22.192Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:32:23.871Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:32:28.976Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:32:34.066Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:32:39.149Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T08:33:22.106Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-21T08:33:23.346Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-21T08:33:28.422Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:33:33.584Z] [WARN] Void for 4b169036-bd54-4a1f-801b-772a71668de5 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T08:33:38.667Z] [INFO] [000000000647] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal

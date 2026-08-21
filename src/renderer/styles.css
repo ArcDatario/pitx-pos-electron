@@ -374,6 +374,52 @@ tbody tr.selected { background: var(--primary-dim); }
   tbody td { padding: 6px 8px; }
 }
 
+/* ---------- Automation ---------- */
+.automation-card {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+.automation-left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.automation-info {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+}
+.automation-title {
+  font-weight: 600;
+  font-size: 13px;
+  color: var(--text);
+}
+.automation-sub {
+  font-size: 11px;
+  color: var(--text-dim);
+}
+.automation-badge {
+  display: inline-flex;
+  align-items: center;
+  padding: 4px 10px;
+  border-radius: 999px;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: .04em;
+  background: var(--success);
+  color: #fff;
+}
+.automation-badge.hidden { display: none; }
+
+@media (max-width: 768px) {
+  .automation-card {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+}
+
 /* ---------- Dated Submission pipeline ---------- */
 .dated-top-row {
   display: flex;

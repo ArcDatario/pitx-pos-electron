@@ -11,12 +11,173 @@ interface SubmitController {
 
 let controller: SubmitController = { abort: false, paused: false, pauseNotified: false };
 
+// ---------- Automation (top-level so resumeAutomation can access it) ----------
+let automationEnabled = false;
+let automationTimer: NodeJS.Timeout | null = null;
+let automationRunning = false;
+
+function getAutomationToday(): string {
+  return new Date().toISOString().slice(0, 10);
+}
+
+async function runAutomationCycle(cfg: AppConfig, win: BrowserWindow) {
+  if (automationRunning) return;
+  if (!win || win.isDestroyed()) return;
+  automationRunning = true;
+  controller = { abort: false, paused: false, pauseNotified: false };
+
+  try {
+    const today = getAutomationToday();
+    send(win, "submit:event", { type: "phase", message: `Automation: processing ${today}...` });
+
+    let inserted = 0;
+    try {
+      inserted = await db.transfer(cfg, today, today);
+      send(win, "submit:event", {
+        type: "insert_done",
+        date: today,
+        inserted,
+        message: `Automation: inserted ${inserted} new transaction(s) for ${today}`,
+      });
+    } catch (e: any) {
+      send(win, "submit:event", {
+        type: "insert_failed",
+        date: today,
+        message: `Automation insert failed for ${today}: ${e?.message ?? String(e)}`,
+      });
+    }
+
+    send(win, "submit:event", { type: "phase", message: `Automation: submitting pending records for ${today}...` });
+
+    const result = await runSubmitBatch(cfg, win, today, today);
+
+    send(win, "submit:event", {
+      type: "phase",
+      message: `Automation cycle done for ${today} — ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`,
+    });
+  } catch (e: any) {
+    send(win, "submit:event", { type: "phase", message: `Automation error: ${e?.message ?? String(e)}` });
+  } finally {
+    automationRunning = false;
+  }
+}
+
+function startAutomationTimer(cfg: AppConfig, win: BrowserWindow) {
+  stopAutomationTimer();
+  const intervalMs = (cfg.worker.poll_interval_seconds || 60) * 1000;
+  automationTimer = setInterval(() => {
+    if (!automationEnabled) return;
+    runAutomationCycle(cfg, win);
+  }, intervalMs);
+  runAutomationCycle(cfg, win);
+}
+
+function stopAutomationTimer() {
+  if (automationTimer) {
+    clearInterval(automationTimer);
+    automationTimer = null;
+  }
+}
+
+export function resumeAutomation(cfg: AppConfig, getWindow: () => BrowserWindow | null) {
+  if (cfg.automation_enabled && !automationEnabled) {
+    automationEnabled = true;
+    const win = getWindow();
+    if (win && !win.isDestroyed()) {
+      startAutomationTimer(cfg, win);
+    }
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      openAsHidden: true,
+    });
+  }
+}
+
 function send(win: BrowserWindow, channel: string, payload: any) {
   if (!win.isDestroyed()) win.webContents.send(channel, payload);
 }
 
 function sleep(ms: number) {
   return new Promise((r) => setTimeout(r, ms));
+}
+
+async function runSubmitBatch(
+  cfg: AppConfig,
+  win: BrowserWindow,
+  start: string,
+  end: string
+): Promise<{ total: number; processed: number; successCount: number; failCount: number; aborted: boolean }> {
+  const records = await db.fetchPendingByDate(cfg, start, end);
+  const total = records.length;
+  send(win, "submit:event", { type: "submit_start", total, message: `Found ${total} record(s) to submit` });
+
+  let processed = 0;
+  let successCount = 0;
+  let failCount = 0;
+
+  for (let i = 0; i < records.length; i++) {
+    if (controller.abort) {
+      send(win, "submit:event", { type: "phase", message: "Aborted" });
+      break;
+    }
+    while (controller.paused && !controller.abort) {
+      if (!controller.pauseNotified) {
+        send(win, "submit:event", { type: "phase", message: "Paused" });
+        controller.pauseNotified = true;
+      }
+      await sleep(400);
+    }
+    if (controller.abort) break;
+    controller.pauseNotified = false;
+
+    const rec = records[i];
+    const guestCheckId = rec.GUESTCHECKID;
+    const isVoid = isVoidRecord(rec);
+    send(win, "submit:event", {
+      type: "sending",
+      guest_check_id: guestCheckId,
+      index: i + 1,
+      total,
+      void: isVoid,
+      message: `Sending ${guestCheckId}`,
+    });
+
+    let result: tsms.SubmitOneResult;
+    try {
+      result = await tsms.submitOne(cfg, rec);
+    } catch (e: any) {
+      result = { outcome: "retryable", message: e?.message ?? String(e), data: null, httpCode: null };
+      const currentRetryCount = Number(rec.retry_count ?? 0);
+      const backoff = tsms.BACKOFF_SECONDS[Math.min(currentRetryCount, tsms.BACKOFF_SECONDS.length - 1)];
+      await db.markFailed(cfg, guestCheckId, result.message, currentRetryCount, cfg.worker.max_retries, backoff);
+    }
+
+    if (result.outcome === "success") {
+      successCount++;
+    } else {
+      failCount++;
+    }
+    send(win, "submit:event", {
+      type: eventTypeFor(result.outcome),
+      guest_check_id: guestCheckId,
+      void: isVoid,
+      message: `${guestCheckId}: ${result.message}`,
+    });
+
+    processed++;
+  }
+
+  send(win, "submit:event", {
+    type: "submit_done",
+    total,
+    processed,
+    successCount,
+    failCount,
+    aborted: controller.abort,
+    message: `Done: ${successCount} submitted, ${failCount} failed, ${processed}/${total} processed`,
+  });
+
+  return { total, processed, successCount, failCount, aborted: controller.abort };
 }
 
 /** Maps a tsms.submitOne() outcome to the "sending"/"success"/"rate_limited"/
@@ -98,111 +259,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     if (action === "abort") controller.abort = true;
     return { ok: true };
   });
-
-  /**
-   * Shared batch-submission loop -- 1:1 with the submit phase that used to
-   * live inline in `submit:by-date-range`. Both the normal "Submit Pending"
-   * path and the "Submit Today" path run through here so the per-record
-   * submit/void orchestration and the live `submit:event` progress logging
-   * stay identical regardless of entry point.
-   *
-   * Reads `controller` (abort/paused) set by `submit:control` so the
-   * renderer can pause/abort either flow.
-   */
-  async function runSubmitBatch(
-    cfg: AppConfig,
-    win: BrowserWindow,
-    start: string,
-    end: string
-  ): Promise<{ total: number; processed: number; successCount: number; failCount: number; aborted: boolean }> {
-    const records = await db.fetchPendingByDate(cfg, start, end);
-    const total = records.length;
-    send(win, "submit:event", { type: "submit_start", total, message: `Found ${total} record(s) to submit` });
-
-    let processed = 0;
-    let successCount = 0;
-    let failCount = 0;
-
-    for (let i = 0; i < records.length; i++) {
-      if (controller.abort) {
-        send(win, "submit:event", { type: "phase", message: "Aborted" });
-        break;
-      }
-      while (controller.paused && !controller.abort) {
-        if (!controller.pauseNotified) {
-          send(win, "submit:event", { type: "phase", message: "Paused" });
-          controller.pauseNotified = true;
-        }
-        await sleep(400);
-      }
-      if (controller.abort) break;
-      controller.pauseNotified = false;
-
-      const rec = records[i];
-      const guestCheckId = rec.GUESTCHECKID;
-      const isVoid = isVoidRecord(rec);
-      send(win, "submit:event", {
-        type: "sending",
-        guest_check_id: guestCheckId,
-        index: i + 1,
-        total,
-        void: isVoid,
-        message: `Sending ${guestCheckId}`,
-      });
-
-      // tsms.submitOne() is a straight port of tsms_common.py::submit_one():
-      // it builds the transaction/submission envelope with checksums,
-      // sends it, handles the 409 (regenerate transaction_id) and 422
-      // (checksum/validation retry) cases internally, then -- for a void
-      // row -- submits first and voids the SAME transaction right after
-      // (with the race-condition retry for "not yet indexed" responses).
-      // It also writes every DB side effect itself (record_attempt,
-      // mark_submitted/voided/rate_limited/failed), exactly like the
-      // Python version, so we don't duplicate any of that here.
-      //
-      // Unlike the previous placeholder logic, this does NOT loop
-      // multiple full-submission attempts in a tight retry loop -- a
-      // "retryable" outcome here means the row's retry_count/
-      // next_retry_at were updated and it'll be picked up again the next
-      // time submit:by-date-range (or a future poller) runs, same as the
-      // Python worker's poll cycle.
-      let result: tsms.SubmitOneResult;
-      try {
-        result = await tsms.submitOne(cfg, rec);
-      } catch (e: any) {
-        result = { outcome: "retryable", message: e?.message ?? String(e), data: null, httpCode: null };
-        const currentRetryCount = Number(rec.retry_count ?? 0);
-        const backoff = tsms.BACKOFF_SECONDS[Math.min(currentRetryCount, tsms.BACKOFF_SECONDS.length - 1)];
-        await db.markFailed(cfg, guestCheckId, result.message, currentRetryCount, cfg.worker.max_retries, backoff);
-      }
-
-      if (result.outcome === "success") {
-        successCount++;
-      } else {
-        failCount++;
-      }
-      send(win, "submit:event", {
-        type: eventTypeFor(result.outcome),
-        guest_check_id: guestCheckId,
-        void: isVoid,
-        message: `${guestCheckId}: ${result.message}`,
-      });
-
-      processed++;
-    }
-
-    send(win, "submit:event", {
-      type: "submit_done",
-      total,
-      processed,
-      successCount,
-      failCount,
-      aborted: controller.abort,
-      message: `Done: ${successCount} submitted, ${failCount} failed, ${processed}/${total} processed`,
-    });
-
-    return { total, processed, successCount, failCount, aborted: controller.abort };
-  }
 
   /**
    * Shared insert-then-submit pipeline for a single business date -- this is
@@ -328,5 +384,105 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     if (!rec) return { ok: false, message: "Record not found" };
     const payload = await tsms.previewPayload(cfg, rec);
     return { ok: true, payload };
+  });
+
+  // ---------- Automation ----------
+  let automationEnabled = false;
+  let automationTimer: NodeJS.Timeout | null = null;
+  let automationRunning = false;
+
+  function getAutomationToday(): string {
+    return new Date().toISOString().slice(0, 10);
+  }
+
+  async function runAutomationCycle(cfg: AppConfig, win: BrowserWindow) {
+    if (automationRunning) return;
+    if (!win || win.isDestroyed()) return;
+    automationRunning = true;
+    controller = { abort: false, paused: false, pauseNotified: false };
+
+    try {
+      const today = getAutomationToday();
+      send(win, "submit:event", { type: "phase", message: `Automation: processing ${today}...` });
+
+      let inserted = 0;
+      try {
+        inserted = await db.transfer(cfg, today, today);
+        send(win, "submit:event", {
+          type: "insert_done",
+          date: today,
+          inserted,
+          message: `Automation: inserted ${inserted} new transaction(s) for ${today}`,
+        });
+      } catch (e: any) {
+        send(win, "submit:event", {
+          type: "insert_failed",
+          date: today,
+          message: `Automation insert failed for ${today}: ${e?.message ?? String(e)}`,
+        });
+      }
+
+      send(win, "submit:event", { type: "phase", message: `Automation: submitting pending records for ${today}...` });
+
+      const result = await runSubmitBatch(cfg, win, today, today);
+
+      send(win, "submit:event", {
+        type: "phase",
+        message: `Automation cycle done for ${today} — ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`,
+      });
+    } catch (e: any) {
+      send(win, "submit:event", { type: "phase", message: `Automation error: ${e?.message ?? String(e)}` });
+    } finally {
+      automationRunning = false;
+    }
+  }
+
+  function startAutomationTimer(cfg: AppConfig, win: BrowserWindow) {
+    stopAutomationTimer();
+    const intervalMs = (cfg.worker.poll_interval_seconds || 60) * 1000;
+    automationTimer = setInterval(() => {
+      if (!automationEnabled) return;
+      runAutomationCycle(cfg, win);
+    }, intervalMs);
+    runAutomationCycle(cfg, win);
+  }
+
+  function stopAutomationTimer() {
+    if (automationTimer) {
+      clearInterval(automationTimer);
+      automationTimer = null;
+    }
+  }
+
+  ipcMain.handle("automation:start", async (_e) => {
+    const cfg = loadConfig();
+    cfg.automation_enabled = true;
+    saveConfig(cfg);
+
+    const win = getWindow();
+    automationEnabled = true;
+    startAutomationTimer(cfg, win);
+
+    app.setLoginItemSettings({
+      openAtLogin: true,
+      openAsHidden: true,
+    });
+
+    return { ok: true, pollInterval: cfg.worker.poll_interval_seconds };
+  });
+
+  ipcMain.handle("automation:stop", async () => {
+    const cfg = loadConfig();
+    cfg.automation_enabled = false;
+    saveConfig(cfg);
+
+    automationEnabled = false;
+    stopAutomationTimer();
+
+    return { ok: true };
+  });
+
+  ipcMain.handle("automation:status", () => {
+    return { enabled: automationEnabled, running: automationRunning };
   });
 }

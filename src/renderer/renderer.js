@@ -370,7 +370,7 @@ window.pos.onSubmitEvent((event) => {
 });
 
 // ---------- Dated Submission (insert a chosen date's data + submit, animated) ----------
-const datedState = { submitting: false, inFlight: {}, total: 0, processed: 0 };
+const datedState = { submitting: false, inFlight: {}, total: 0, processed: 0, automation: false };
 
 (function initDatedDateDefault() {
   const el = $("datedDate");
@@ -617,6 +617,53 @@ $("datedConfirmModal").addEventListener("click", (e) => {
   if (e.target === $("datedConfirmModal")) closeDatedConfirmModal();
 });
 $("btnCloseDatedConfirmModal").addEventListener("click", closeDatedConfirmModal);
+
+// ---------- Automation ----------
+function setAutomationUi(on) {
+  const toggle = $("automationToggle");
+  const badge = $("automationBadge");
+  const status = $("automationStatus");
+  const submitBtn = $("btnDatedSubmit");
+  const pauseBtn = $("btnDatedPause");
+  const abortBtn = $("btnDatedAbort");
+
+  if (toggle) toggle.checked = on;
+  if (badge) badge.classList.toggle("hidden", !on);
+  if (status) status.textContent = on ? "Running..." : "Off";
+  if (submitBtn) submitBtn.disabled = on;
+  if (pauseBtn) pauseBtn.disabled = !on;
+  if (abortBtn) abortBtn.disabled = !on;
+}
+
+$("automationToggle").addEventListener("change", async (e) => {
+  const on = e.target.checked;
+  try {
+    if (on) {
+      datedState.automation = true;
+      await window.pos.startAutomation();
+      setAutomationUi(true);
+      setDatedStatus("Automation started");
+      datedLog("phase", "Automation enabled");
+    } else {
+      datedState.automation = false;
+      await window.pos.stopAutomation();
+      setAutomationUi(false);
+      setDatedStatus("Automation stopped");
+      datedLog("phase", "Automation disabled");
+    }
+  } catch (err) {
+    datedState.automation = false;
+    setDatedStatus("Automation failed: " + err.message);
+    datedLog("error", "Automation error: " + err.message);
+    setAutomationUi(false);
+  }
+});
+
+window.pos.onSubmitEvent((event) => {
+  if (datedState.automation && event.type === "submit_done") {
+    setDatedStatus(`Auto cycle done — ${event.message}`);
+  }
+});
 $("btnDatedConfirmCancel").addEventListener("click", closeDatedConfirmModal);
 
 $("btnDatedConfirmSubmit").addEventListener("click", async () => {
@@ -976,7 +1023,10 @@ async function checkStartupConnection() {
   }
 
   retryBtn.onclick = attempt;
-  settingsBtn.onclick = () => switchTab("settings");
+  settingsBtn.onclick = () => {
+    screen.classList.add("hidden");
+    switchTab("settings");
+  };
   await attempt();
 }
 

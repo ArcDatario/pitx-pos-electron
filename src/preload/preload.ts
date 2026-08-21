@@ -31,6 +31,9 @@ contextBridge.exposeInMainWorld("pos", {
     ipcRenderer.on("submit:event", listener);
     return () => ipcRenderer.removeListener("submit:event", listener);
   },
+  startAutomation: () => ipcRenderer.invoke("automation:start"),
+  stopAutomation: () => ipcRenderer.invoke("automation:stop"),
+  getAutomationStatus: () => ipcRenderer.invoke("automation:status"),
   onNavigateSettings: (callback: () => void) => {
   ipcRenderer.on("nav:settings", () => callback());
 },

@@ -36,6 +36,7 @@ export interface AppConfig {
   filters: FiltersConfig;
   tsms: TsmsConfig;
   worker: WorkerConfig;
+  automation_enabled?: boolean;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
@@ -64,6 +65,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     batch_size: 100,
     max_retries: 5,
   },
+  automation_enabled: false,
 };
 
 /**
