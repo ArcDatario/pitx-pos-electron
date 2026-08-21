@@ -925,7 +925,59 @@ async function boot() {
   $("rangeStart").value = today;
   $("rangeEnd").value = today;
 
-  await refreshAll();
+  await checkStartupConnection();
+}
+
+async function checkStartupConnection() {
+  const screen = $("connectionScreen");
+  const status = $("connectionStatus");
+  const details = $("connectionDetails");
+  const retryBtn = $("btnRetryConnection");
+  const settingsBtn = $("btnOpenSettings");
+
+  if (!screen) {
+    await refreshAll();
+    return;
+  }
+
+  screen.classList.remove("hidden");
+  status.textContent = "Checking connection...";
+  details.textContent = "";
+  retryBtn.classList.add("hidden");
+  settingsBtn.classList.add("hidden");
+
+  async function attempt() {
+    status.textContent = "Checking connection...";
+    details.textContent = "";
+    retryBtn.classList.add("hidden");
+    settingsBtn.classList.add("hidden");
+
+    try {
+      const res = await window.pos.testConnection(state.config);
+      if (res.ok) {
+        status.textContent = "Connected";
+        details.textContent = `${res.dbName} · ${res.version || ""}`.trim();
+        setTimeout(() => {
+          screen.classList.add("hidden");
+          refreshAll();
+        }, 400);
+      } else {
+        status.textContent = "Connection failed";
+        details.textContent = res.message || "Unable to reach database";
+        retryBtn.classList.remove("hidden");
+        settingsBtn.classList.remove("hidden");
+      }
+    } catch (e) {
+      status.textContent = "Connection error";
+      details.textContent = e.message;
+      retryBtn.classList.remove("hidden");
+      settingsBtn.classList.remove("hidden");
+    }
+  }
+
+  retryBtn.onclick = attempt;
+  settingsBtn.onclick = () => switchTab("settings");
+  await attempt();
 }
 
 boot().catch((e) => logEvent("error", `Startup error: ${e.message}`));

@@ -50,6 +50,39 @@ html, body {
   font-size: 13px;
 }
 
+.connection-screen {
+  position: fixed; inset: 0; z-index: 2000;
+  background: var(--bg);
+  display: flex; align-items: center; justify-content: center;
+}
+.connection-screen.hidden { display: none; }
+.connection-card {
+  text-align: center;
+  padding: 40px 36px;
+  border-radius: var(--radius);
+  border: 1px solid var(--card-border);
+  background: var(--card);
+  box-shadow: var(--shadow);
+  max-width: 420px; width: 92%;
+}
+.connection-card .brand-mark {
+  width: 56px; height: 56px; border-radius: 14px;
+  background: var(--primary); color: #fff;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-size: 24px; font-weight: 700; margin-bottom: 14px;
+}
+.connection-card .brand-title {
+  font-size: 16px; font-weight: 700; color: var(--text); margin-bottom: 18px;
+}
+.connection-status {
+  font-size: 13px; font-weight: 600; color: var(--text); margin-bottom: 8px;
+}
+.connection-details {
+  font-size: 11.5px; color: var(--text-dim); margin-bottom: 18px;
+  white-space: pre-wrap; word-break: break-word;
+}
+.connection-card .btn { margin: 4px; }
+
 .app { display: flex; flex-direction: column; height: 100vh; }
 
 .topbar {

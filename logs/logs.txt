@@ -420,3 +420,4 @@
   "code": "ECONNCLOSED",
   "name": "ConnectionError"
 }
+[2026-08-21T06:34:04.779Z] Logger initialized
