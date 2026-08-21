@@ -173,19 +173,31 @@
       </section>
     </main>
   </div>
-  <div class="modal-overlay hidden" id="payloadModal">
-    <div class="modal">
-      <div class="modal-header">
-        <h3>Payload Preview</h3>
-        <button class="modal-close" id="btnCloseModal">&times;</button>
-      </div>
-      <pre class="modal-body" id="payloadPreview"></pre>
-      <div class="modal-footer">
-        <button class="btn primary" id="btnCopyModal">Copy</button>
+   <div class="modal-overlay hidden" id="payloadModal">
+     <div class="modal">
+       <div class="modal-header">
+         <h3>Payload Preview</h3>
+         <button class="modal-close" id="btnCloseModal">&times;</button>
+       </div>
+       <pre class="modal-body" id="payloadPreview"></pre>
+       <div class="modal-footer">
+         <button class="btn primary" id="btnCopyModal">Copy</button>
+       </div>
+     </div>
+    </div>
+    <div class="modal-overlay hidden" id="viewModal">
+      <div class="modal">
+        <div class="modal-header">
+          <h3>Transaction Details</h3>
+          <button class="modal-close" id="btnCloseViewModal">&times;</button>
+        </div>
+        <pre class="modal-body" id="viewModalBody"></pre>
+        <div class="modal-footer">
+          <button class="btn primary" id="btnCloseViewModal2">Close</button>
+        </div>
       </div>
     </div>
-   </div>
-   <div class="modal-overlay hidden" id="confirmModal">
+    <div class="modal-overlay hidden" id="confirmModal">
      <div class="modal">
        <div class="modal-header">
          <h3>Submit Today's Transactions</h3>
@@ -207,7 +219,14 @@
          <button class="btn success" id="btnConfirmSubmit">Confirm &amp; Submit</button>
        </div>
      </div>
-   </div>
+    </div>
+    <div class="context-menu hidden" id="contextMenu">
+      <div class="ctx-item" id="ctxView">View</div>
+      <div class="ctx-item" id="ctxSubmit">Submit</div>
+      <div class="ctx-item" id="ctxVoid">Void</div>
+      <div class="ctx-sep"></div>
+      <div class="ctx-item" id="ctxBuildPayload">Build Payload</div>
+    </div>
     <script src="lib/bootstrap.bundle.min.js"></script>
     <script src="renderer.js"></script>
   </body>

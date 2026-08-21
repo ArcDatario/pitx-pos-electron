@@ -202,7 +202,7 @@ function renderTableRows(rows) {
         }
         return `<td>${r[key] ?? ""}</td>`;
       }).join("");
-      return `<tr data-id="${r.GUESTCHECKID}">${cells}</tr>`;
+      return `<tr data-id="${r.GUESTCHECKID}" data-tx-id="${r.transaction_id ?? ""}">${cells}</tr>`;
     })
     .join("");
 
@@ -488,6 +488,123 @@ function animateCopyCheck(btn) {
     btn.title = "Copy sent payload";
   }, 1500);
 }
+
+// ---------- Context menu ----------
+let contextMenuGuestCheckId = null;
+
+function showContextMenu(x, y, row) {
+  const menu = $("contextMenu");
+  if (!menu) return;
+  contextMenuGuestCheckId = state.selectedGuestCheckId;
+  if (!contextMenuGuestCheckId) return;
+  const voidEl = $("ctxVoid");
+  if (voidEl) {
+    const txId = row ? row.dataset.txId || "" : "";
+    voidEl.style.display = txId ? "" : "none";
+  }
+  menu.style.left = x + "px";
+  menu.style.top = y + "px";
+  menu.classList.remove("hidden");
+}
+
+function hideContextMenu() {
+  const menu = $("contextMenu");
+  if (menu) menu.classList.add("hidden");
+  contextMenuGuestCheckId = null;
+}
+
+async function ctxView() {
+  const id = contextMenuGuestCheckId;
+  hideContextMenu();
+  if (!id) return;
+  setStatus("Loading details...");
+  try {
+    const rec = await window.pos.getRecord(id);
+    if (!rec) {
+      setStatus("Record not found");
+      return;
+    }
+    const lines = Object.entries(rec)
+      .map(([k, v]) => `${k}: ${v ?? ""}`)
+      .join("\n");
+    $("viewModalBody").textContent = lines;
+    $("viewModal").classList.remove("hidden");
+  } catch (err) {
+    setStatus("Failed: " + err.message);
+  }
+}
+
+async function ctxSubmit() {
+  const id = contextMenuGuestCheckId;
+  hideContextMenu();
+  if (!id) return;
+  setStatus("Submitting...");
+  try {
+    const res = await window.pos.submitSingle(id);
+    setStatus(res.ok ? "Submitted" : "Submit failed: " + res.message);
+    refreshAll();
+  } catch (err) {
+    setStatus("Submit failed: " + err.message);
+  }
+}
+
+async function ctxVoid() {
+  const id = contextMenuGuestCheckId;
+  hideContextMenu();
+  if (!id) return;
+  setStatus("Voiding...");
+  try {
+    const res = await window.pos.voidRecord(id);
+    setStatus(res.ok ? "Void submitted" : "Void failed: " + res.message);
+    refreshAll();
+  } catch (err) {
+    setStatus("Void failed: " + err.message);
+  }
+}
+
+async function ctxBuildPayload() {
+  const id = contextMenuGuestCheckId;
+  hideContextMenu();
+  if (!id) return;
+  setStatus("Building payload...");
+  try {
+    const res = await window.pos.previewPayload(id);
+    if (res.ok) {
+      openPayloadModal(JSON.stringify(res.payload, null, 2));
+      setStatus("Payload preview ready");
+    } else {
+      setStatus("Failed: " + res.message);
+    }
+  } catch (err) {
+    setStatus("Failed: " + err.message);
+  }
+}
+
+$("btnCloseViewModal").addEventListener("click", () => $("viewModal").classList.add("hidden"));
+$("btnCloseViewModal2").addEventListener("click", () => $("viewModal").classList.add("hidden"));
+$("viewModal").addEventListener("click", (e) => {
+  if (e.target === $("viewModal")) $("viewModal").classList.add("hidden");
+});
+
+document.addEventListener("contextmenu", (e) => {
+  const row = e.target.closest("tr[data-id]");
+  if (!row) return;
+  e.preventDefault();
+  state.selectedGuestCheckId = row.dataset.id;
+  showContextMenu(e.clientX, e.clientY, row);
+});
+
+document.addEventListener("click", (e) => {
+  const menu = $("contextMenu");
+  if (menu && !menu.classList.contains("hidden")) {
+    if (!menu.contains(e.target)) hideContextMenu();
+  }
+});
+
+$("ctxView").addEventListener("click", ctxView);
+$("ctxSubmit").addEventListener("click", ctxSubmit);
+$("ctxVoid").addEventListener("click", ctxVoid);
+$("ctxBuildPayload").addEventListener("click", ctxBuildPayload);
 
 // ---------- Settings ----------
 const SETTINGS_FIELDS = [

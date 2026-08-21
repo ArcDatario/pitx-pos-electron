@@ -103,11 +103,26 @@ function sortKeysRecursive(value: any): any {
   return value;
 }
 
-/** Matches Python's json.dumps(sorted_data, separators=(",", ":")) --
+/** Recursively replaces undefined with null so JSON.stringify matches
+ * Python's json.dumps(ensure_ascii=False) behavior for checksum inputs. */
+function normalizeUndefined(value: any): any {
+  if (Array.isArray(value)) return value.map(normalizeUndefined);
+  if (value !== null && typeof value === "object") {
+    const normalized: Record<string, any> = {};
+    for (const key of Object.keys(value)) {
+      normalized[key] = value[key] === undefined ? null : normalizeUndefined(value[key]);
+    }
+    return normalized;
+  }
+  return value;
+}
+
+/** Matches Python's json.dumps(sorted_data, separators=(",", ":"), ensure_ascii=False) --
  * compact, no whitespace, keys already pre-sorted by sortKeysRecursive. */
 export function tsmsChecksum(data: any): string {
   const sorted = sortKeysRecursive(data);
-  const jsonStr = JSON.stringify(sorted);
+  const normalized = normalizeUndefined(sorted);
+  const jsonStr = JSON.stringify(normalized);
   return crypto.createHash("sha256").update(jsonStr, "utf-8").digest("hex");
 }
 
@@ -149,7 +164,7 @@ export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, trans
 
   const txn: Record<string, any> = {
     transaction_id: transactionId,
-    hardware_id: tcfg.hardware_id,
+    hardware_id: tcfg.hardware_id ?? null,
     receipt_no: cfg.tsms.auto_receipt_no ? (agg.GUESTCHECKID ?? null) : (agg.RECEIPT_NO ?? null),
     transaction_timestamp: formatIso(agg.TRANSDATETIME ?? agg.BUSINESSDATE),
     gross_sales: tsmsAmount(grossSales),
@@ -190,8 +205,8 @@ export function buildSubmission(cfg: AppConfig, txn: Record<string, any>) {
   const tcfg = cfg.tsms;
   const submission: Record<string, any> = {
     submission_uuid: tsmsGenerateUuidV4(),
-    tenant_id: tcfg.tenant_id,
-    terminal_id: tcfg.terminal_id,
+    tenant_id: tcfg.tenant_id ?? null,
+    terminal_id: tcfg.terminal_id ?? null,
     submission_timestamp: tsmsIsoTimestampNow(),
     transaction_count: 1,
     payload_checksum: "",
@@ -351,20 +366,21 @@ export async function voidTransactionAfterSubmit(
   transactionId: string,
   voidReason = "Voided at POS",
   attempts = 3,
-  delaySeconds = 2
+  delaySeconds = 5
 ): Promise<ApiResult> {
   let result: ApiResult = { outcome: "terminal", message: "Void not attempted", data: null, httpCode: null };
   for (let attempt = 1; attempt <= attempts; attempt++) {
-    result = await voidTransaction(cfg, transactionId, voidReason);
-    if (result.outcome !== "terminal" || !looksLikeNotYetIndexed(result.message)) {
-      return result;
-    }
-    if (attempt < attempts) {
-      // eslint-disable-next-line no-console
+    if (attempt > 1) {
       console.warn(
         `Void for ${transactionId} not yet indexed by TSMS (attempt ${attempt}/${attempts}): ${result.message} -- retrying in ${delaySeconds}s`
       );
       await sleep(delaySeconds * 1000);
+    } else {
+      await sleep(5000);
+    }
+    result = await voidTransaction(cfg, transactionId, voidReason);
+    if (result.outcome !== "terminal" || !looksLikeNotYetIndexed(result.message)) {
+      return result;
     }
   }
   return result;
@@ -468,6 +484,7 @@ export async function submitOne(cfg: AppConfig, rec: Record<string, any>): Promi
         await db.markVoided(cfg, guestCheckId, {
           submission_uuid: submission.submission_uuid,
           payload_checksum: submission.payload_checksum,
+          submission_timestamp: submission.submission_timestamp,
         });
         console.info(`[${guestCheckId}] Successfully marked as voided.`);
         return {

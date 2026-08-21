@@ -21,6 +21,7 @@ contextBridge.exposeInMainWorld("pos", {
   submitControl: (action: "pause" | "resume" | "abort") =>
     ipcRenderer.invoke("submit:control", action),
   resubmit: (guestCheckId: string) => ipcRenderer.invoke("submit:resubmit", guestCheckId),
+  submitSingle: (guestCheckId: string) => ipcRenderer.invoke("submit:single", guestCheckId),
   voidRecord: (guestCheckId: string) => ipcRenderer.invoke("submit:void", guestCheckId),
   previewPayload: (guestCheckId: string) => ipcRenderer.invoke("preview:payload", guestCheckId),
 

@@ -105,6 +105,8 @@ const REQUIRED_COLUMNS: Record<string, string> = {
   // the "view details" panel.
   transaction_id: "VARCHAR(155) NULL",
   uuid: "VARCHAR(155) NULL",
+  submission_uuid: "VARCHAR(155) NULL",
+  submission_timestamp: "DATETIME2 NULL",
   submission_checksum: "VARCHAR(64) NULL",
   transaction_checksum: "VARCHAR(64) NULL",
   retry_count: "INT NOT NULL DEFAULT 0",
@@ -685,12 +687,16 @@ export async function markSubmitted(cfg: AppConfig, guestCheckId: string, submis
     .request()
     .input("id", sql.VarChar, guestCheckId)
     .input("uuid", sql.VarChar, submission.submission_uuid)
+    .input("subUuid", sql.VarChar, submission.submission_uuid)
+    .input("subTimestamp", sql.DateTime2, submission.submission_timestamp ?? null)
     .input("subChecksum", sql.VarChar, submission.payload_checksum)
     .input("txnChecksum", sql.VarChar, submission.transaction?.payload_checksum ?? null)
     .query(`
       UPDATE dbo.dts_pitx_payload SET
         status = 'submitted',
         uuid = @uuid,
+        submission_uuid = @subUuid,
+        submission_timestamp = @subTimestamp,
         submission_checksum = @subChecksum,
         transaction_checksum = @txnChecksum,
         next_retry_at = NULL,
@@ -705,18 +711,22 @@ export async function markSubmitted(cfg: AppConfig, guestCheckId: string, submis
 export async function markVoided(
   cfg: AppConfig,
   guestCheckId: string,
-  voidPayload: { submission_uuid?: string; payload_checksum?: string }
+  voidPayload: { submission_uuid?: string; payload_checksum?: string; submission_timestamp?: string }
 ): Promise<void> {
   const p = await getPool(cfg);
   await p
     .request()
     .input("id", sql.VarChar, guestCheckId)
     .input("uuid", sql.VarChar, voidPayload.submission_uuid ?? null)
+    .input("subUuid", sql.VarChar, voidPayload.submission_uuid ?? null)
+    .input("subTimestamp", sql.DateTime2, voidPayload.submission_timestamp ?? null)
     .input("checksum", sql.VarChar, voidPayload.payload_checksum ?? null)
     .query(`
       UPDATE dbo.dts_pitx_payload SET
         status = 'voided',
         uuid = @uuid,
+        submission_uuid = @subUuid,
+        submission_timestamp = @subTimestamp,
         submission_checksum = @checksum,
         next_retry_at = NULL,
         last_error = NULL,
@@ -840,6 +850,8 @@ export async function installCreateTable(cfg: AppConfig): Promise<void> {
         next_retry_at DATETIME2 NULL,
         transaction_id VARCHAR(155) NULL,
         uuid VARCHAR(155) NULL,
+        submission_uuid VARCHAR(155) NULL,
+        submission_timestamp DATETIME2 NULL,
         submission_checksum VARCHAR(64) NULL,
         transaction_checksum VARCHAR(64) NULL,
         last_error VARCHAR(2000) NULL,

@@ -240,3 +240,110 @@
 [2026-08-20T03:34:49.273Z] [INFO] [000000000601] Successfully marked as submitted.
 [2026-08-20T03:34:50.343Z] [INFO] [000000000602] Successfully marked as submitted.
 [2026-08-20T03:34:51.454Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-20T03:50:05.786Z] Logger initialized
+[2026-08-20T03:50:47.750Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-20T03:50:47.753Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-20T03:50:48.995Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-20T03:50:54.076Z] [WARN] Void for 470362f6-608b-4bac-a0e8-b1fcb0f1d23a not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T03:50:59.152Z] [WARN] Void for 470362f6-608b-4bac-a0e8-b1fcb0f1d23a not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T03:51:04.254Z] [INFO] [000000000594] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-20T03:51:05.477Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-20T03:51:06.551Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-20T03:51:07.690Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-20T03:51:08.837Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-20T03:51:09.954Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-20T03:51:11.147Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-20T03:51:12.331Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-20T06:20:45.824Z] Logger initialized
+[2026-08-20T06:24:15.594Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-20T06:24:15.596Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-20T06:24:16.632Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-20T06:24:21.729Z] [WARN] Void for 6e3a6d89-af81-45fd-b897-5e6ed1fe2514 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T06:24:26.822Z] [WARN] Void for 6e3a6d89-af81-45fd-b897-5e6ed1fe2514 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T06:24:31.913Z] [INFO] [000000000594] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-20T06:24:32.983Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-20T06:24:34.225Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-20T06:24:35.343Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-20T06:24:36.390Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-20T06:24:37.454Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-20T06:24:38.499Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-20T06:24:39.564Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-20T07:06:12.513Z] Logger initialized
+[2026-08-20T07:08:20.450Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-20T07:08:20.453Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-20T07:08:21.525Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-20T07:08:26.625Z] [WARN] Void for c6dccbcc-ed0d-4d02-9dbf-1beea5f9250c not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T07:08:31.734Z] [WARN] Void for c6dccbcc-ed0d-4d02-9dbf-1beea5f9250c not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T07:08:36.861Z] [INFO] [000000000594] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-20T07:08:37.996Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-20T07:08:39.040Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-20T07:08:40.078Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-20T07:08:41.124Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-20T07:08:42.159Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-20T07:08:43.152Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-20T07:08:44.243Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-20T09:07:37.481Z] Logger initialized
+[2026-08-20T09:19:23.884Z] Logger initialized
+[2026-08-20T09:19:29.761Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-20T09:24:41.252Z] Logger initialized
+[2026-08-20T09:24:57.567Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-20T09:24:57.569Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-20T09:24:58.737Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-20T09:25:03.835Z] [WARN] Void for 2bb604ae-354c-4f42-8452-b296c191355b not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T09:25:09.012Z] [WARN] Void for 2bb604ae-354c-4f42-8452-b296c191355b not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-20T09:25:14.117Z] [INFO] [000000000594] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-20T09:25:15.297Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-20T09:25:16.454Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-20T09:25:17.904Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-20T09:25:19.702Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-20T09:25:21.441Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-20T09:25:22.916Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-20T09:25:24.459Z] [INFO] [000000000603] Successfully marked as submitted.
+[2026-08-20T10:54:24.327Z] Logger initialized
+[2026-08-20T10:54:28.686Z] [ERROR] Error occurred in handler for 'db:records': {
+  "code": "EINSTLOOKUP",
+  "originalError": {
+    "code": "EINSTLOOKUP"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-20T10:54:28.694Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "EINSTLOOKUP",
+  "originalError": {
+    "code": "EINSTLOOKUP"
+  },
+  "name": "ConnectionError"
+}
+[2026-08-21T00:31:36.211Z] Logger initialized
+[2026-08-21T01:44:57.744Z] Logger initialized
+[2026-08-21T02:00:41.633Z] Logger initialized
+[2026-08-21T02:00:47.468Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-21T02:30:52.827Z] Logger initialized
+[2026-08-21T02:31:01.533Z] [ERROR] Error occurred in handler for 'db:status-counts': {
+  "code": "ECONNCLOSED",
+  "name": "ConnectionError"
+}
+[2026-08-21T02:31:31.545Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-21T02:31:33.215Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-21T02:31:38.359Z] [WARN] Void for 19a2c1c3-7748-4495-a739-9b748a479070 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T02:31:43.488Z] [WARN] Void for 19a2c1c3-7748-4495-a739-9b748a479070 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T02:31:48.599Z] [INFO] [000000000594] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T02:32:18.828Z] [INFO] [000000000596] Successfully marked as submitted.
+[2026-08-21T02:36:29.733Z] [INFO] [000000000595] Successfully marked as submitted.
+[2026-08-21T02:36:29.740Z] [INFO] [000000000594] VOID detected: qty=1, amt=49
+[2026-08-21T02:36:30.814Z] [INFO] [000000000594] Transaction submitted OK, now calling void API...
+[2026-08-21T02:36:35.924Z] [WARN] Void for 19a2c1c3-7748-4495-a739-9b748a479070 not yet indexed by TSMS (attempt 2/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T02:36:41.018Z] [WARN] Void for 19a2c1c3-7748-4495-a739-9b748a479070 not yet indexed by TSMS (attempt 3/3): Transaction not found or does not belong to this terminal -- retrying in 5s
+[2026-08-21T02:36:46.121Z] [INFO] [000000000594] Void API result: outcome=terminal, http=404, message=Transaction not found or does not belong to this terminal
+[2026-08-21T02:36:47.238Z] [INFO] [000000000597] Successfully marked as submitted.
+[2026-08-21T02:36:48.355Z] [INFO] [000000000598] Successfully marked as submitted.
+[2026-08-21T02:36:49.370Z] [INFO] [000000000600] Successfully marked as submitted.
+[2026-08-21T02:36:50.529Z] [INFO] [000000000601] Successfully marked as submitted.
+[2026-08-21T02:36:52.088Z] [INFO] [000000000602] Successfully marked as submitted.
+[2026-08-21T02:36:53.280Z] [INFO] [000000000603] Successfully marked as submitted.

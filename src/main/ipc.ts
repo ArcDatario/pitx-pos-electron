@@ -255,6 +255,15 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     return { ok: result.outcome === "success", message: result.message };
   });
 
+  ipcMain.handle("submit:single", async (_e, guestCheckId: string) => {
+    const cfg = loadConfig();
+    const rec = await db.fetchRecordByGuestCheckId(cfg, guestCheckId);
+    if (!rec) return { ok: false, message: "Record not found" };
+
+    const result = await tsms.submitOne(cfg, rec);
+    return { ok: result.outcome === "success", message: result.message };
+  });
+
   ipcMain.handle("submit:void", async (_e, guestCheckId: string) => {
     const cfg = loadConfig();
     const rec = await db.fetchRecordByGuestCheckId(cfg, guestCheckId);
