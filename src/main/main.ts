@@ -1,5 +1,6 @@
 import { app, BrowserWindow, Menu, Tray, nativeImage, MenuItemConstructorOptions } from "electron";
 import * as path from "path";
+import * as fs from "fs";
 import { initLogger } from "./logger";
 import { registerIpcHandlers, resumeAutomation } from "./ipc";
 import { loadConfig } from "./config";
@@ -8,7 +9,15 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 
-initLogger();
+process.on("uncaughtException", (err) => {
+  console.error("[main] uncaughtException:", err);
+});
+
+try {
+  initLogger();
+} catch (e) {
+  console.error("[main] initLogger failed:", e);
+}
 
 const gotSingleInstanceLock = app.requestSingleInstanceLock();
 
@@ -144,7 +153,38 @@ function createWindow() {
     show: false,
   });
 
-  mainWindow.loadFile(path.join(__dirname, "../../src/renderer/index.html"));
+  const htmlPath = path.join(app.getAppPath(), "src/renderer/index.html");
+  console.info(`[main] loading HTML from: ${htmlPath}`);
+  
+  if (fs.existsSync(htmlPath)) {
+    mainWindow.loadFile(htmlPath).catch((err) => {
+      console.error(`[main] loadFile failed:`, err);
+      loadFallback();
+    });
+  } else {
+    console.error(`[main] HTML not found at: ${htmlPath}`);
+    loadFallback();
+  }
+
+  function loadFallback() {
+    if (!mainWindow) return;
+    const fallbackPath = path.join(__dirname, "../../src/renderer/index.html");
+    console.info(`[main] trying fallback: ${fallbackPath}`);
+    if (fs.existsSync(fallbackPath)) {
+      mainWindow.loadFile(fallbackPath).catch((err) => {
+        console.error(`[main] fallback loadFile failed:`, err);
+        if (mainWindow && !mainWindow.isDestroyed()) {
+          mainWindow.loadURL("data:text/html;charset=utf-8,<h1>Application load failed</h1>").catch(() => {});
+        }
+      });
+    } else {
+      console.error(`[main] fallback HTML not found at: ${fallbackPath}`);
+      if (mainWindow && !mainWindow.isDestroyed()) {
+        mainWindow.loadURL("data:text/html;charset=utf-8,<h1>Application files not found</h1>").catch(() => {});
+      }
+    }
+  }
+
   mainWindow.once("ready-to-show", () => {
     if (!mainWindow) return;
     const cfg = loadConfig();
