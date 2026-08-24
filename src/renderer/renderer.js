@@ -28,6 +28,7 @@ const COLUMNS = [
   ["submission_uuid", "Submission UUID"],
   ["transaction_id", "Transaction ID"],
   ["last_error", "Last Error"],
+  ["last_response_body", "Response Body"],
   ["last_payload_sent", "Sent Payload"],
   ["payload", "Payload"],
 ];
@@ -190,7 +191,28 @@ function renderTableRows(rows) {
           return `<td>${fmtDate(r[key])}</td>`;
         }
         if (key === "submission_uuid" && r[key]) {
-          return `<td title="${r[key]}">${String(r[key]).slice(0, 8)}…</td>`;
+          return `<td><button class="btn ghost sm copy-col-btn" data-value="${String(r[key]).replace(/"/g, '&quot;')}" title="Copy submission UUID">${copyIconSvg}</button></td>`;
+        }
+        if (key === "submission_uuid") {
+          return `<td></td>`;
+        }
+        if (key === "transaction_id" && r[key]) {
+          return `<td><button class="btn ghost sm copy-col-btn" data-value="${String(r[key]).replace(/"/g, '&quot;')}" title="Copy transaction ID">${copyIconSvg}</button></td>`;
+        }
+        if (key === "transaction_id") {
+          return `<td></td>`;
+        }
+        if (key === "last_error" && r[key]) {
+          return `<td><button class="btn ghost sm copy-col-btn" data-value="${String(r[key]).replace(/"/g, '&quot;')}" title="Copy last error">${copyIconSvg}</button></td>`;
+        }
+        if (key === "last_error") {
+          return `<td></td>`;
+        }
+        if (key === "last_response_body" && r[key]) {
+          return `<td><button class="btn ghost sm copy-col-btn" data-value="${String(r[key]).replace(/"/g, '&quot;')}" title="Copy response body">${copyIconSvg}</button></td>`;
+        }
+        if (key === "last_response_body") {
+          return `<td></td>`;
         }
         if (key === "last_payload_sent") {
           if (!r[key]) return `<td></td>`;
@@ -758,7 +780,7 @@ document.addEventListener("click", async (e) => {
 document.addEventListener("click", (e) => {
   const btn = e.target.closest(".copy-col-btn");
   if (!btn) return;
-  const text = copyCache.get(btn.dataset.id);
+  const text = btn.dataset.value || copyCache.get(btn.dataset.id);
   if (text === undefined || text === null) return;
   navigator.clipboard.writeText(text).then(
     () => {
