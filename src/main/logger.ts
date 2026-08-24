@@ -6,21 +6,32 @@ const LOGS_DIR = path.join(
   app.isPackaged ? path.dirname(app.getPath("exe")) : app.getAppPath(),
   "logs"
 );
-const LOG_FILE = path.join(LOGS_DIR, "logs.txt");
+
+function getLogFileName(): string {
+  const now = new Date();
+  const datePart = now.toLocaleDateString("en-US", {
+    month: "short",
+    day: "numeric",
+    year: "numeric",
+  });
+  return `${datePart}.txt`;
+}
+
+function getLogFilePath(): string {
+  return path.join(LOGS_DIR, getLogFileName());
+}
 
 function ensureLogsReady(): void {
   if (!fs.existsSync(LOGS_DIR)) {
     fs.mkdirSync(LOGS_DIR, { recursive: true });
-  }
-  if (!fs.existsSync(LOG_FILE)) {
-    fs.writeFileSync(LOG_FILE, "", "utf-8");
   }
 }
 
 function appendLog(message: string): void {
   ensureLogsReady();
   const timestamp = new Date().toISOString();
-  fs.appendFileSync(LOG_FILE, `[${timestamp}] ${message}\n`, "utf-8");
+  const logFile = getLogFilePath();
+  fs.appendFileSync(logFile, `[${timestamp}] ${message}\n`, "utf-8");
 }
 
 function interceptConsole(): void {
@@ -52,6 +63,4 @@ export function log(message: string): void {
   appendLog(`[LOG] ${message}`);
 }
 
-export function getLogFilePath(): string {
-  return LOG_FILE;
-}
+export { getLogFilePath };
