@@ -7,7 +7,7 @@ contextBridge.exposeInMainWorld("pos", {
   testConnection: (cfg: unknown) => ipcRenderer.invoke("config:test-connection", cfg),
 
   transfer: (start: string, end: string) => ipcRenderer.invoke("db:transfer", { start, end }),
-  getStatusCounts: () => ipcRenderer.invoke("db:status-counts"),
+  getStatusCounts: (filters: unknown) => ipcRenderer.invoke("db:status-counts", filters),
   getSummary: (filters: unknown) => ipcRenderer.invoke("db:summary", filters),
   getRecords: (filters: unknown, page: number, pageSize: number) =>
     ipcRenderer.invoke("db:records", { filters, page, pageSize }),

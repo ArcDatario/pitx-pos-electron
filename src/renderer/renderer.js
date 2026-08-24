@@ -129,7 +129,7 @@ function setStatus(text) {
 
 // ---------- Stats ----------
 async function refreshStats() {
-  const counts = await window.pos.getStatusCounts();
+  const counts = await window.pos.getStatusCounts(state.filters);
   const specs = [
     ["total", "Total"],
     ["pending", "Pending"],
@@ -260,7 +260,14 @@ $("btnReset").addEventListener("click", () => {
   $("fStatus").value = "";
   state.filters = { guestCheckId: "", date: "", status: "" };
   state.page = 1;
-  refreshAll();
+
+  const tbody = $("recordsTable")?.querySelector("tbody");
+  if (tbody) tbody.innerHTML = "";
+  const emptyState = $("emptyState");
+  if (emptyState) emptyState.classList.remove("hidden");
+  $("statusStats").innerHTML = "";
+  $("summaryStats").innerHTML = "";
+  $("pageInfo").textContent = "";
 });
 
 $("btnPrev").addEventListener("click", () => {
@@ -619,7 +626,7 @@ $("datedConfirmModal").addEventListener("click", (e) => {
 $("btnCloseDatedConfirmModal").addEventListener("click", closeDatedConfirmModal);
 
 // ---------- Automation ----------
-function setAutomationUi(on) {
+function setAutomationUi(on, saved = true) {
   const toggle = $("automationToggle");
   const badge = $("automationBadge");
   const status = $("automationStatus");
@@ -629,33 +636,37 @@ function setAutomationUi(on) {
 
   if (toggle) toggle.checked = on;
   if (badge) badge.classList.toggle("hidden", !on);
-  if (status) status.textContent = on ? "Running..." : "Off";
+  if (status) status.textContent = on ? (saved ? "Running..." : "Unsaved") : "Off";
   if (submitBtn) submitBtn.disabled = on;
   if (pauseBtn) pauseBtn.disabled = !on;
   if (abortBtn) abortBtn.disabled = !on;
 }
 
-$("automationToggle").addEventListener("change", async (e) => {
+$("automationToggle").addEventListener("change", (e) => {
   const on = e.target.checked;
+  datedState.automation = on;
+  setAutomationUi(on, false);
+  setDatedStatus(on ? "Unsaved - click Save to persist" : "Unsaved - click Save to persist");
+});
+
+$("btnAutomationSave").addEventListener("click", async () => {
+  const on = datedState.automation;
   try {
     if (on) {
-      datedState.automation = true;
       await window.pos.startAutomation();
-      setAutomationUi(true);
-      setDatedStatus("Automation started");
-      datedLog("phase", "Automation enabled");
+      setAutomationUi(true, true);
+      setDatedStatus("Automation saved and running");
+      datedLog("phase", "Automation enabled and saved");
     } else {
-      datedState.automation = false;
       await window.pos.stopAutomation();
-      setAutomationUi(false);
-      setDatedStatus("Automation stopped");
-      datedLog("phase", "Automation disabled");
+      setAutomationUi(false, true);
+      setDatedStatus("Automation stopped and saved");
+      datedLog("phase", "Automation disabled and saved");
     }
   } catch (err) {
-    datedState.automation = false;
     setDatedStatus("Automation failed: " + err.message);
     datedLog("error", "Automation error: " + err.message);
-    setAutomationUi(false);
+    setAutomationUi(on, false);
   }
 });
 
@@ -972,6 +983,24 @@ async function boot() {
   $("rangeStart").value = today;
   $("rangeEnd").value = today;
 
+  const tbody = $("recordsTable")?.querySelector("tbody");
+  if (tbody) tbody.innerHTML = "";
+  const emptyState = $("emptyState");
+  if (emptyState) emptyState.classList.remove("hidden");
+  $("statusStats").innerHTML = "";
+  $("summaryStats").innerHTML = "";
+  $("pageInfo").textContent = "";
+
+  try {
+    const autoStatus = await window.pos.getAutomationStatus();
+    if (autoStatus && autoStatus.enabled) {
+      datedState.automation = true;
+      setAutomationUi(true, true);
+    }
+  } catch (e) {
+    console.error("[boot] automation status sync failed", e);
+  }
+
   await checkStartupConnection();
 }
 
@@ -983,7 +1012,6 @@ async function checkStartupConnection() {
   const settingsBtn = $("btnOpenSettings");
 
   if (!screen) {
-    await refreshAll();
     return;
   }
 
@@ -1006,7 +1034,6 @@ async function checkStartupConnection() {
         details.textContent = `${res.dbName} · ${res.version || ""}`.trim();
         setTimeout(() => {
           screen.classList.add("hidden");
-          refreshAll();
         }, 400);
       } else {
         status.textContent = "Connection failed";

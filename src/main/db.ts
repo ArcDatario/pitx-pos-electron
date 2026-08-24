@@ -502,12 +502,18 @@ export interface RecordFilters {
 }
 
 export async function getStatusCounts(
-  cfg: AppConfig
+  cfg: AppConfig,
+  filters: RecordFilters = {}
 ): Promise<Record<string, number>> {
   const p = await getPool(cfg);
-  const res = await p
-    .request()
-    .query("SELECT status, COUNT(*) AS c FROM dbo.dts_pitx_payload GROUP BY status");
+  const req = p.request();
+  const where = buildWhereClause(req, filters);
+  const res = await req.query(`
+    SELECT status, COUNT(*) AS c
+    FROM dbo.dts_pitx_payload
+    ${where}
+    GROUP BY status
+  `);
   const counts: Record<string, number> = { total: 0, pending: 0, submitted: 0, failed: 0, voided: 0 };
   for (const row of res.recordset) {
     const key = String(row.status ?? "").toLowerCase();

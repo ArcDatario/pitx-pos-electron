@@ -10,6 +10,23 @@ let isQuitting = false;
 
 initLogger();
 
+const gotSingleInstanceLock = app.requestSingleInstanceLock();
+
+if (!gotSingleInstanceLock) {
+  app.quit();
+} else {
+  app.on("second-instance", () => {
+    if (!mainWindow) {
+      createWindow();
+    } else {
+      mainWindow.show();
+      mainWindow.focus();
+    }
+  });
+}
+
+app.disableHardwareAcceleration();
+
 function buildTray() {
   const iconPath = path.join(__dirname, "../../build/icon.ico");
   const trayIcon = nativeImage.createFromPath(iconPath);
@@ -127,7 +144,15 @@ function createWindow() {
   });
 
   mainWindow.loadFile(path.join(__dirname, "../../src/renderer/index.html"));
-  mainWindow.once("ready-to-show", () => mainWindow?.show());
+  mainWindow.once("ready-to-show", () => {
+    if (!mainWindow) return;
+    const cfg = loadConfig();
+    if (cfg.automation_enabled) {
+      mainWindow.hide();
+    } else {
+      mainWindow.show();
+    }
+  });
 
   mainWindow.on("close", (e) => {
     if (!isQuitting) {
@@ -147,9 +172,9 @@ app.whenReady().then(() => {
   buildMenu();
   buildTray();
   createWindow();
-  resumeAutomation(cfg, () => mainWindow);
 
   if (cfg.automation_enabled) {
+    resumeAutomation(cfg, () => mainWindow);
     app.setLoginItemSettings({
       openAtLogin: true,
       openAsHidden: true,

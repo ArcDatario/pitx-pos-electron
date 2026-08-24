@@ -400,6 +400,24 @@ tbody tr.selected { background: var(--primary-dim); }
   font-size: 11px;
   color: var(--text-dim);
 }
+.automation-right {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.btnAutomationSave {
+  padding: 6px 14px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 6px;
+  border: none;
+  cursor: pointer;
+  background: var(--primary);
+  color: #fff;
+}
+.btnAutomationSave:hover {
+  opacity: .92;
+}
 .automation-badge {
   display: inline-flex;
   align-items: center;
@@ -417,6 +435,10 @@ tbody tr.selected { background: var(--primary-dim); }
   .automation-card {
     flex-direction: column;
     align-items: flex-start;
+  }
+  .automation-right {
+    width: 100%;
+    justify-content: flex-end;
   }
 }
 

@@ -224,9 +224,9 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     return { inserted };
   });
 
-  ipcMain.handle("db:status-counts", async () => {
+  ipcMain.handle("db:status-counts", async (_e, filters: db.RecordFilters) => {
     const cfg = loadConfig();
-    return db.getStatusCounts(cfg);
+    return db.getStatusCounts(cfg, filters);
   });
 
   ipcMain.handle("db:summary", async (_e, filters: db.RecordFilters) => {
