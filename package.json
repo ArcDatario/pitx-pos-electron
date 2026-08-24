@@ -27,6 +27,7 @@
   "build": {
     "appId": "ph.pitx.pos.transfer",
     "productName": "PITX POS Transfer",
+    "icon": "build/logo.ico",
     "files": [
       "dist/**/*",
       "src/renderer/**/*",
