@@ -1022,11 +1022,6 @@ async function checkStartupConnection() {
   settingsBtn.classList.add("hidden");
 
   async function attempt() {
-    status.textContent = "Checking connection...";
-    details.textContent = "";
-    retryBtn.classList.add("hidden");
-    settingsBtn.classList.add("hidden");
-
     try {
       const res = await window.pos.testConnection(state.config);
       if (res.ok) {
@@ -1035,18 +1030,30 @@ async function checkStartupConnection() {
         setTimeout(() => {
           screen.classList.add("hidden");
         }, 400);
+        return true;
       } else {
         status.textContent = "Connection failed";
         details.textContent = res.message || "Unable to reach database";
-        retryBtn.classList.remove("hidden");
-        settingsBtn.classList.remove("hidden");
+        return false;
       }
     } catch (e) {
       status.textContent = "Connection error";
       details.textContent = e.message;
-      retryBtn.classList.remove("hidden");
-      settingsBtn.classList.remove("hidden");
+      return false;
     }
+  }
+
+  let connected = false;
+  connected = await attempt();
+  if (!connected) {
+    status.textContent = "Retrying...";
+    await new Promise((r) => setTimeout(r, 2000));
+    connected = await attempt();
+  }
+
+  if (!connected) {
+    retryBtn.classList.remove("hidden");
+    settingsBtn.classList.remove("hidden");
   }
 
   retryBtn.onclick = attempt;
@@ -1054,7 +1061,6 @@ async function checkStartupConnection() {
     screen.classList.add("hidden");
     switchTab("settings");
   };
-  await attempt();
 }
 
 boot().catch((e) => logEvent("error", `Startup error: ${e.message}`));

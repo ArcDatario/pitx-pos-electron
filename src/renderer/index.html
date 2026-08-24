@@ -131,21 +131,15 @@
 
       <!-- HOME TAB -->
       <section class="panel active" id="panel-dated">
-        <div class="card automation-card">
-          <div class="automation-left">
-            <label class="toggle">
-              <input type="checkbox" id="automationToggle" />
-              <span class="toggle-track"><span class="toggle-thumb"></span></span>
-            </label>
-            <div class="automation-info">
-              <div class="automation-title">Enable Automation</div>
-              <div class="automation-sub" id="automationStatus">Off</div>
-            </div>
-          </div>
-          <div class="automation-right">
-            <button class="btn success sm" id="btnAutomationSave">Save</button>
-            <span class="automation-badge hidden" id="automationBadge">Auto</span>
-          </div>
+        <div class="automation-row">
+          <label class="toggle">
+            <input type="checkbox" id="automationToggle" />
+            <span class="toggle-track"><span class="toggle-thumb"></span></span>
+          </label>
+          <span class="automation-label">Enable Automation</span>
+          <span class="automation-status" id="automationStatus">Off</span>
+          <button class="btn success sm" id="btnAutomationSave">Save</button>
+          <span class="automation-badge hidden" id="automationBadge">Auto</span>
         </div>
 
         <div class="dated-top-row">

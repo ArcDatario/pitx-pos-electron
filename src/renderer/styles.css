@@ -375,72 +375,35 @@ tbody tr.selected { background: var(--primary-dim); }
 }
 
 /* ---------- Automation ---------- */
-.automation-card {
+.automation-row {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 14px;
+  gap: 10px;
+  padding: 8px 0;
+  margin-left: auto;
 }
-.automation-left {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-}
-.automation-info {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-}
-.automation-title {
+.automation-label {
   font-weight: 600;
-  font-size: 13px;
+  font-size: 12px;
   color: var(--text);
 }
-.automation-sub {
+.automation-status {
   font-size: 11px;
   color: var(--text-dim);
-}
-.automation-right {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-}
-.btnAutomationSave {
-  padding: 6px 14px;
-  font-size: 11px;
-  font-weight: 700;
-  border-radius: 6px;
-  border: none;
-  cursor: pointer;
-  background: var(--primary);
-  color: #fff;
-}
-.btnAutomationSave:hover {
-  opacity: .92;
+  min-width: 120px;
 }
 .automation-badge {
   display: inline-flex;
   align-items: center;
-  padding: 4px 10px;
+  padding: 2px 8px;
   border-radius: 999px;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   letter-spacing: .04em;
   background: var(--success);
   color: #fff;
 }
 .automation-badge.hidden { display: none; }
-
-@media (max-width: 768px) {
-  .automation-card {
-    flex-direction: column;
-    align-items: flex-start;
-  }
-  .automation-right {
-    width: 100%;
-    justify-content: flex-end;
-  }
-}
 
 /* ---------- Dated Submission pipeline ---------- */
 .dated-top-row {
