@@ -4,10 +4,14 @@ import * as fs from "fs";
 import { initLogger } from "./logger";
 import { registerIpcHandlers, resumeAutomation } from "./ipc";
 import { loadConfig } from "./config";
+import { autoUpdater } from "electron-updater";
 
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+
+autoUpdater.autoDownload = false;
+autoUpdater.autoInstallOnAppQuit = true;
 
 process.on("uncaughtException", (err) => {
   console.error("[main] uncaughtException:", err);
@@ -207,9 +211,40 @@ function createWindow() {
   });
 }
 
+function sendUpdateEvent(type: string, payload: Record<string, unknown> = {}) {
+  if (mainWindow && !mainWindow.isDestroyed()) {
+    mainWindow.webContents.send("app:update", { type, ...payload });
+  }
+}
+
+function configureAutoUpdater() {
+  if (!app.isPackaged) return;
+
+  autoUpdater.on("checking-for-update", () => sendUpdateEvent("checking"));
+  autoUpdater.on("update-available", (info) => {
+    sendUpdateEvent("available", { version: info.version });
+  });
+  autoUpdater.on("update-not-available", () => sendUpdateEvent("not-available"));
+  autoUpdater.on("download-progress", (progress) => {
+    sendUpdateEvent("downloading", { percent: Math.round(progress.percent) });
+  });
+  autoUpdater.on("update-downloaded", (info) => {
+    sendUpdateEvent("downloaded", { version: info.version });
+  });
+  autoUpdater.on("error", (error) => {
+    console.error("[main] update failed:", error);
+    sendUpdateEvent("error", { message: error.message });
+  });
+
+  autoUpdater.checkForUpdates().catch((error) => {
+    console.error("[main] update check failed:", error);
+  });
+}
+
 app.whenReady().then(() => {
   const cfg = loadConfig();
   registerIpcHandlers(() => mainWindow as BrowserWindow);
+  configureAutoUpdater();
   buildMenu();
   buildTray();
   createWindow();

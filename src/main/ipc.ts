@@ -1,4 +1,5 @@
 import { app, ipcMain, BrowserWindow } from "electron";
+import { autoUpdater } from "electron-updater";
 import { AppConfig, loadConfig, saveConfig, getConfigFilePath } from "./config";
 import * as db from "./db";
 import * as tsms from "./tsms";
@@ -255,6 +256,24 @@ function isVoidRecord(rec: Record<string, any>): boolean {
 }
 
 export function registerIpcHandlers(getWindow: () => BrowserWindow) {
+  ipcMain.handle("app:update-check", async () => {
+    if (!app.isPackaged) return { ok: false, message: "Updates are available in the installed app." };
+    const result = await autoUpdater.checkForUpdates();
+    return { ok: true, updateInfo: result?.updateInfo ?? null };
+  });
+
+  ipcMain.handle("app:update-download", async () => {
+    if (!app.isPackaged) return { ok: false, message: "Updates are available in the installed app." };
+    await autoUpdater.downloadUpdate();
+    return { ok: true };
+  });
+
+  ipcMain.handle("app:update-install", () => {
+    if (!app.isPackaged) return { ok: false, message: "Updates are available in the installed app." };
+    autoUpdater.quitAndInstall();
+    return { ok: true };
+  });
+
   ipcMain.handle("config:get", () => loadConfig());
 
   ipcMain.handle("config:save", (_e, cfg: AppConfig) => {

@@ -38,4 +38,12 @@ contextBridge.exposeInMainWorld("pos", {
   ipcRenderer.on("nav:settings", () => callback());
 },
   quitApp: () => ipcRenderer.invoke("app:quit"),
+  checkForUpdates: () => ipcRenderer.invoke("app:update-check"),
+  downloadUpdate: () => ipcRenderer.invoke("app:update-download"),
+  installUpdate: () => ipcRenderer.invoke("app:update-install"),
+  onUpdateEvent: (callback: (event: any) => void) => {
+    const listener = (_e: unknown, payload: any) => callback(payload);
+    ipcRenderer.on("app:update", listener);
+    return () => ipcRenderer.removeListener("app:update", listener);
+  },
 });

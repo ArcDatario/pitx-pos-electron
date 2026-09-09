@@ -118,6 +118,39 @@ document.querySelectorAll(".tab").forEach((btn) => {
 // Native File > Settings menu item (see preload.ts: onNavigateSettings)
 window.pos.onNavigateSettings(() => switchTab("settings"));
 
+// ---------- App updates ----------
+const updateBanner = $("updateBanner");
+const updateMessage = $("updateMessage");
+const downloadUpdateButton = $("btnDownloadUpdate");
+const installUpdateButton = $("btnInstallUpdate");
+
+function showUpdateBanner(message) {
+  updateMessage.textContent = message;
+  updateBanner.classList.remove("hidden");
+}
+
+downloadUpdateButton.addEventListener("click", async () => {
+  downloadUpdateButton.disabled = true;
+  showUpdateBanner("Downloading update...");
+  await window.pos.downloadUpdate();
+});
+
+installUpdateButton.addEventListener("click", () => window.pos.installUpdate());
+$("btnDismissUpdate").addEventListener("click", () => updateBanner.classList.add("hidden"));
+
+window.pos.onUpdateEvent((event) => {
+  if (event.type === "available") {
+    showUpdateBanner(`Version ${event.version} is available.`);
+    downloadUpdateButton.classList.remove("hidden");
+  } else if (event.type === "downloading") {
+    showUpdateBanner(`Downloading update... ${event.percent}%`);
+  } else if (event.type === "downloaded") {
+    showUpdateBanner(`Version ${event.version} is ready to install.`);
+    downloadUpdateButton.classList.add("hidden");
+    installUpdateButton.classList.remove("hidden");
+  }
+});
+
 // ---------- Activity log ----------
 function logEvent(type, message) {
   const line = document.createElement("div");

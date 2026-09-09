@@ -1,7 +1,7 @@
 {
   "name": "pitx-pos-transfer",
   "productName": "PITX POS Transfer",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "PITX POS -> TSMS transfer & submission desktop app",
   "main": "dist/main/main.js",
   "scripts": {
@@ -15,6 +15,7 @@
   "dependencies": {
     "axios": "^1.7.7",
     "bootstrap": "^5.3.8",
+    "electron-updater": "^6.8.9",
     "mssql": "^11.0.1"
   },
   "devDependencies": {
@@ -29,7 +30,7 @@
     "productName": "PITX POS Transfer",
     "icon": "build/logo.ico",
     "directories": {
-    "output": "release-fixed"
+      "output": "release-fixed"
     },
     "files": [
       "dist/**/*",
@@ -39,6 +40,12 @@
     ],
     "win": {
       "target": "nsis"
+    },
+    "publish": {
+      "provider": "github",
+      "owner": "ArcDatario",
+      "repo": "pitx-pos-electron",
+      "releaseType": "release"
     },
     "nsis": {
       "oneClick": false,

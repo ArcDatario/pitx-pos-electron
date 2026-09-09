@@ -81,6 +81,23 @@ This runs `electron-builder` using the `build` block in `package.json`
 first — there's a placeholder gap there since I can't generate binary icon
 files. Output lands in `release-fixed/`.
 
+## Automatic updates
+
+The installed app checks the GitHub Releases feed for `ArcDatario/pitx-pos-electron`.
+When a newer release is found, the app shows a download button; after the download
+finishes it shows a restart button to install the update.
+
+To publish an update:
+
+1. Change the `version` in `package.json` (for example, `1.0.2`) and run `npm install`.
+2. Run `npm run dist`.
+3. Create a GitHub Release with the same tag, such as `v1.0.2`.
+4. Upload the generated installer, `latest.yml`, and the `.blockmap` file from `release-fixed/` to that release.
+
+Every release must have a higher version than the installed app. The GitHub Release
+must remain published, and all three generated files must stay available for update
+detection and download.
+
 ## Feature parity checklist (vs. the Tkinter app)
 
 | Old (Tkinter) | New (Electron) |
