@@ -1,14 +1,14 @@
 {
   "name": "pitx-pos-transfer",
   "productName": "PITX POS Transfer",
-  "version": "1.0.1",
+  "version": "1.0.2",
   "description": "PITX POS -> TSMS transfer & submission desktop app",
   "main": "dist/main/main.js",
   "scripts": {
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron .",
     "dev": "tsc -p tsconfig.json --watch",
-    "dist": "npm run build && electron-builder --win --config.directories.output=release-fixed-new && node scripts/update-release.js"
+    "dist": "npm run build && electron-builder --win"
   },
   "author": "PITX",
   "license": "UNLICENSED",
@@ -39,7 +39,8 @@
       "build/logo.ico"
     ],
     "win": {
-      "target": "nsis"
+      "target": "nsis",
+      "signAndEditExecutable": false
     },
     "publish": {
       "provider": "github",
