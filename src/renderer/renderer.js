@@ -1114,7 +1114,10 @@ async function checkStartupConnection() {
     retryBtn.classList.add("hidden");
     settingsBtn.classList.add("hidden");
     try {
-      const res = await window.pos.testConnection(state.config);
+      const timeout = new Promise((_, reject) => {
+        setTimeout(() => reject(new Error("Connection timed out after 10 seconds.")), 10000);
+      });
+      const res = await Promise.race([window.pos.testConnection(state.config), timeout]);
       if (res.ok) {
         status.textContent = "Connected";
         details.textContent = `${res.dbName} · ${res.version || ""}`.trim();
@@ -1134,12 +1137,7 @@ async function checkStartupConnection() {
     }
   }
 
-  let connected = false;
-  connected = await attempt();
-  if (!connected) {
-    await new Promise((r) => setTimeout(r, 2000));
-    connected = await attempt();
-  }
+  const connected = await attempt();
 
   if (!connected) {
     status.textContent = "Unable to connect";

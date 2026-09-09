@@ -1,7 +1,7 @@
 {
   "name": "pitx-pos-transfer",
   "productName": "PITX POS Transfer",
-  "version": "1.0.2",
+  "version": "1.0.4",
   "description": "PITX POS -> TSMS transfer & submission desktop app",
   "main": "dist/main/main.js",
   "scripts": {
