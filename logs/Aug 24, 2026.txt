@@ -1,0 +1,2 @@
+[2026-08-24T07:45:00.928Z] Logger initialized
+[2026-08-24T07:45:01.211Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html

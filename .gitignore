@@ -3,3 +3,7 @@ dist/
 config.json
 release/
 *.log
+backup
+release-fixed-new/
+release-fixed/
+syntax.txt

@@ -75,7 +75,11 @@ export function tsmsGenerateUuidV4(): string {
 }
 
 export function tsmsIsoTimestampNow(): string {
-  return new Date().toISOString().replace(/Z$/, "").slice(0, 23) + "Z";
+  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
+  const pad = (value: number, length = 2) => String(value).padStart(length, "0");
+  return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`
+    + `T${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`
+    + `.${pad(now.getUTCMilliseconds(), 3)}Z`;
 }
 
 /** Converts a JS Date/string/null into an ISO-8601 string with millisecond
@@ -142,7 +146,8 @@ export function upperCaseKeys(rec: Record<string, any>): Record<string, any> {
  *   gross_sales, net_sales, promo_status, customer_code,
  *   payload_checksum, adjustments[], taxes[]
  * }
- * receipt_no is taken directly from the database record (RECEIPT_NO).
+ * receipt_no uses a generated value when auto_receipt_no is enabled;
+ * otherwise it is taken directly from the database record (RECEIPT_NO).
  */
 export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, transactionId: string) {
   const tcfg = cfg.tsms;
@@ -165,7 +170,7 @@ export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, trans
   const txn: Record<string, any> = {
     transaction_id: transactionId,
     hardware_id: tcfg.hardware_id ?? null,
-    receipt_no: cfg.tsms.auto_receipt_no ? (agg.GUESTCHECKID ?? null) : (agg.RECEIPT_NO ?? null),
+    receipt_no: cfg.tsms.auto_receipt_no ? `AUTO-${transactionId}` : (agg.RECEIPT_NO ?? null),
     transaction_timestamp: formatIso(agg.TRANSDATETIME ?? agg.BUSINESSDATE),
     gross_sales: tsmsAmount(grossSales),
     net_sales: tsmsAmount(netSales),

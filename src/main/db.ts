@@ -137,12 +137,25 @@ async function ensureColumnsExist(p: ConnectionPool): Promise<void> {
 }
 
 /**
- * 1:1 port of tsms_pos/pos.py::transfer(). Aggregates dbo.v_salesdetails into
- * dbo.dts_pitx_payload for [startDate, endDate], handling voided FCRInvNumbers
- * (negative "Item Sale" rows) as their own void records.
+ * Aggregates dbo.v_salesdetails into dbo.dts_pitx_payload for [startDate, endDate],
+ * handling voided FCRInvNumbers (negative "Item Sale" rows) as their own void records.
  * 
  * UPSERT logic: If receipt_no exists and is_void = 1, UPDATE voidtotal_amt/voidtotal_qty.
  * If receipt_no doesn't exist, INSERT new record.
+ * 
+ * All values are used directly from v_salesdetails source (NO CALCULATIONS):
+ * - netsales = v.Netsales
+ * - vat_12 = v.taxcollected
+ * - lessvat = SUM(v.lessvat)
+ * - lessPWD = SUM(v.LessPWD)
+ * - lessSC = SUM(v.LessSC)
+ * - lessEMP = SUM(v.lessemp)
+ * - lessNtnlAth = SUM(v.lessNationalAth)
+ * - lessSoloparent = SUM(v.lessSoloparent)
+ * - vatable_sales = v.VatableSales (if lessvat=0) else 0
+ * - sc_vat_excempt_sales = v.Netsales (if lessvat>0) else 0
+ * - vat = v.taxcollected
+ * - gross_sales = netsales + vat_12 + lessPWD + lessSC + lessSoloparent + lessNtnlAth + lessEMP
  */
 export async function transfer(
   cfg: AppConfig,
@@ -157,6 +170,7 @@ export async function transfer(
   const query = `
     DECLARE @startDate DATE = @p_startDate;
     DECLARE @endDate DATE = @p_endDate;
+    DECLARE @mergeActions TABLE (ActionName NVARCHAR(10));
     SET NOCOUNT ON;
 
     WITH VoidFCR AS (
@@ -168,6 +182,7 @@ export async function transfer(
           AND FCRInvNumber IS NOT NULL
           AND FCRInvNumber <> ''
     ),
+    -- Identify Solo Parent transactions
     SoloParentDiscount AS (
         SELECT DISTINCT FCRInvNumber
         FROM dbo.v_salesdetails
@@ -182,52 +197,28 @@ export async function transfer(
             v.BusinessDate,
             MAX(v.sys_datetime) AS transdatetime,
             v.FCRInvNumber AS guestcheckid,
+            -- ordertypename: 
+            -- If Solo Parent -> 'Solo Parent'
+            -- If Employee -> 'Employee'
+            -- Otherwise use source
             CASE 
                 WHEN sp.FCRInvNumber IS NOT NULL THEN 'Solo Parent'
                 WHEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessemp ELSE 0 END), 0)) > 0 THEN 'Employee'
                 ELSE MAX(v.order_type)
             END AS ordertypename,
             MAX(v.FCRInvNumber) AS receipt_no,
-            -- netsales:
-            -- Solo Parent: (amt / 1.12) - ((amt / 1.12) * 0.10) = gross_sales - lessSoloparent
-            -- Others: netsales from source
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) -
-                     ((SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) * 0.10)
-                ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0))
-            END AS netsales,
-            -- vat_12: 
-            -- Solo Parent: 0 (VAT goes to lessvat)
-            -- VAT-exempt (Zero Rated, PWD, Senior Citizen): 0
-            -- Employee, National Athlete, Standard: 12% of netsales
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL OR MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                THEN 0
-                ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) * 0.12
-            END AS vat_12,
-            -- lessvat:
-            -- Solo Parent: amt - (amt / 1.12) = VAT amount
-            -- VAT-exempt (Zero Rated, PWD, Senior Citizen): 12% of netsales
-            -- Employee, Standard, National Athlete: 0
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) -
-                     (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12)
-                WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) * 0.12
-                ELSE 0
-            END AS lessvat,
+            -- netsales: from source
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) AS netsales,
+            -- vat_12: Use taxcollected from source for ALL transactions
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.taxcollected ELSE 0 END), 0)) AS vat_12,
+            -- lessvat: SUM the lessvat column from v_salesdetails
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessvat ELSE 0 END), 0)) AS lessvat,
+            -- Use source values directly for all discount columns (NO CALCULATIONS)
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.LessPWD ELSE 0 END), 0)) AS lessPWD,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.LessSC ELSE 0 END), 0)) AS lessSC,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessemp ELSE 0 END), 0)) AS lessEMP,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessNationalAth ELSE 0 END), 0)) AS lessNtnlAth,
-            -- lessSoloparent: 10% of (amt / 1.12)
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) * 0.10
-                ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessSoloparent ELSE 0 END), 0))
-            END AS lessSoloparent,
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessSoloparent ELSE 0 END), 0)) AS lessSoloparent,
             -- voidtotal_amt: Capture negative amounts
             SUM(ISNULL(ABS(CASE WHEN v.amt < 0 THEN v.amt ELSE 0 END), 0)) AS voidtotal_amt,
             -- voidtotal_qty: Capture negative quantities
@@ -235,50 +226,29 @@ export async function transfer(
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.srvc_amt ELSE 0 END), 0)) AS gc_sales,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.GC_excess ELSE 0 END), 0)) AS gc_excess,
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.other_disc ELSE 0 END), 0)) AS otherdiscount,
-            -- vat: Same logic as vat_12
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL OR MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                THEN 0
-                ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) * 0.12
-            END AS vat,
-            -- gross_sales: 
-            -- Solo Parent: amt / 1.12
-            -- Others: netsales + vat + lessNtnlAth + lessSoloparent + lessEMP
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12
-                ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) +
-                     (CASE 
-                        WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                        THEN 0
-                        ELSE SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) * 0.12
-                     END) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessNationalAth ELSE 0 END), 0)) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessSoloparent ELSE 0 END), 0)) +
-                     SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessemp ELSE 0 END), 0))
-            END AS gross_sales,
-            -- vatable_sales: If lessvat = 0 -> VATable
+            -- vat: Same as vat_12 (use taxcollected from source)
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.taxcollected ELSE 0 END), 0)) AS vat,
+            -- gross_sales: netsales + vat_12 + lessPWD + lessSC + lessSoloparent + lessNtnlAth + lessEMP
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) +
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.taxcollected ELSE 0 END), 0)) +
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.LessPWD ELSE 0 END), 0)) +
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.LessSC ELSE 0 END), 0)) +
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessSoloparent ELSE 0 END), 0)) +
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessNationalAth ELSE 0 END), 0)) +
+            SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessemp ELSE 0 END), 0)) AS gross_sales,
+            -- vatable_sales: 
+            -- If lessvat = 0 (VATable): use VatableSales from source
+            -- If lessvat > 0 (VAT-exempt): 0
             CASE
-                WHEN (CASE 
-                    WHEN sp.FCRInvNumber IS NOT NULL
-                    THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) -
-                         (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12)
-                    WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                    THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) * 0.12
-                    ELSE 0
-                END) = 0
-                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0))
+                WHEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessvat ELSE 0 END), 0)) = 0
+                THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.VatableSales ELSE 0 END), 0))
                 ELSE 0
             END AS vatable_sales,
             -- sc_vat_excempt_sales: 
-            -- For Solo Parent: use the calculated netsales
-            -- For other VAT-exempt (PWD, Senior Citizen, Zero Rated): source Netsales
-            -- For VATable transactions: 0
+            -- If lessvat > 0 (VAT-exempt): use Netsales from source
+            -- If lessvat = 0 (VATable): 0
             CASE
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN (SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) -
-                     ((SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.amt ELSE 0 END), 0)) / 1.12) * 0.10)
-                WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
+                WHEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessvat ELSE 0 END), 0)) > 0
                 THEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
@@ -302,110 +272,58 @@ export async function transfer(
             v.BusinessDate,
             MAX(v.sys_datetime) AS transdatetime,
             MAX(v.FCRInvNumber) AS guestcheckid,
+            -- ordertypename: 
+            -- If Solo Parent -> 'Solo Parent'
+            -- If Employee -> 'Employee'
+            -- Otherwise use source
             CASE 
                 WHEN sp.FCRInvNumber IS NOT NULL THEN 'Solo Parent'
                 WHEN SUM(ISNULL(ABS(v.lessemp), 0)) > 0 THEN 'Employee'
                 ELSE MAX(v.order_type)
             END AS ordertypename,
             MAX(v.FCRInvNumber) AS receipt_no,
-            -- netsales:
-            -- Solo Parent: (amt / 1.12) - ((amt / 1.12) * 0.10) = gross_sales - lessSoloparent
-            -- Others: netsales from source
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN (SUM(ISNULL(ABS(v.amt), 0)) / 1.12) -
-                     ((SUM(ISNULL(ABS(v.amt), 0)) / 1.12) * 0.10)
-                ELSE SUM(ISNULL(ABS(v.Netsales), 0))
-            END AS netsales,
-            -- vat_12:
-            -- Solo Parent: 0 (VAT goes to lessvat)
-            -- VAT-exempt (Zero Rated, PWD, Senior Citizen): 0
-            -- Employee, National Athlete, Standard: 12% of netsales
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL OR MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                THEN 0
-                ELSE SUM(ISNULL(ABS(v.Netsales), 0)) * 0.12
-            END AS vat_12,
-            -- lessvat:
-            -- Solo Parent: amt - (amt / 1.12) = VAT amount
-            -- VAT-exempt (Zero Rated, PWD, Senior Citizen): 12% of netsales
-            -- Employee, Standard, National Athlete: 0
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN SUM(ISNULL(ABS(v.amt), 0)) - (SUM(ISNULL(ABS(v.amt), 0)) / 1.12)
-                WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                THEN SUM(ISNULL(ABS(v.Netsales), 0)) * 0.12
-                ELSE 0
-            END AS lessvat,
+            -- netsales: from source
+            SUM(ISNULL(ABS(v.Netsales), 0)) AS netsales,
+            -- vat_12: Use taxcollected from source for ALL transactions
+            SUM(ISNULL(ABS(v.taxcollected), 0)) AS vat_12,
+            -- lessvat: SUM the lessvat column from v_salesdetails
+            SUM(ISNULL(ABS(v.lessvat), 0)) AS lessvat,
+            -- Use source values directly for all discount columns (NO CALCULATIONS)
             SUM(ISNULL(ABS(v.LessPWD), 0)) AS lessPWD,
             SUM(ISNULL(ABS(v.LessSC), 0)) AS lessSC,
             SUM(ISNULL(ABS(v.lessemp), 0)) AS lessEMP,
             SUM(ISNULL(ABS(v.lessNationalAth), 0)) AS lessNtnlAth,
-            -- lessSoloparent: 10% of (amt / 1.12)
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN (SUM(ISNULL(ABS(v.amt), 0)) / 1.12) * 0.10
-                ELSE SUM(ISNULL(ABS(v.lessSoloparent), 0))
-            END AS lessSoloparent,
+            SUM(ISNULL(ABS(v.lessSoloparent), 0)) AS lessSoloparent,
+            -- voidtotal_amt: 0 for non-void transactions
             0 AS voidtotal_amt,
+            -- voidtotal_qty: 0 for non-void transactions
             0 AS voidtotal_qty,
             SUM(ISNULL(ABS(v.srvc_amt), 0)) AS gc_sales,
             SUM(ISNULL(ABS(v.GC_excess), 0)) AS gc_excess,
             SUM(ISNULL(ABS(v.other_disc), 0)) AS otherdiscount,
-            -- vat: Same logic as vat_12
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL OR MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                THEN 0
-                ELSE SUM(ISNULL(ABS(v.Netsales), 0)) * 0.12
-            END AS vat,
-            -- gross_sales: 
-            -- Solo Parent: amt / 1.12
-            -- PWD: netsales + lessPWD
-            -- Senior Citizen: netsales + lessSC
-            -- Zero Rated: netsales
-            -- Employee, National Athlete, Standard: netsales + vat + lessNtnlAth + lessSoloparent + lessEMP
-            CASE 
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN SUM(ISNULL(ABS(v.amt), 0)) / 1.12
-                WHEN MAX(v.order_type) = 'PWD'
-                THEN SUM(ISNULL(ABS(v.Netsales), 0)) +
-                     SUM(ISNULL(ABS(v.LessPWD), 0))
-                WHEN MAX(v.order_type) = 'Senior Citizen'
-                THEN SUM(ISNULL(ABS(v.Netsales), 0)) +
-                     SUM(ISNULL(ABS(v.LessSC), 0))
-                WHEN MAX(v.order_type) = 'Zero Rated'
-                THEN SUM(ISNULL(ABS(v.Netsales), 0))
-                ELSE SUM(ISNULL(ABS(v.Netsales), 0)) +
-                     (CASE 
-                        WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                        THEN 0
-                        ELSE SUM(ISNULL(ABS(v.Netsales), 0)) * 0.12
-                     END) +
-                     SUM(ISNULL(ABS(v.lessNationalAth), 0)) +
-                     SUM(ISNULL(ABS(v.lessSoloparent), 0)) +
-                     SUM(ISNULL(ABS(v.lessemp), 0))
-            END AS gross_sales,
-            -- vatable_sales: If lessvat = 0 -> VATable
+            -- vat: Same as vat_12 (use taxcollected from source)
+            SUM(ISNULL(ABS(v.taxcollected), 0)) AS vat,
+            -- gross_sales: netsales + vat_12 + lessPWD + lessSC + lessSoloparent + lessNtnlAth + lessEMP
+            SUM(ISNULL(ABS(v.Netsales), 0)) +
+            SUM(ISNULL(ABS(v.taxcollected), 0)) +
+            SUM(ISNULL(ABS(v.LessPWD), 0)) +
+            SUM(ISNULL(ABS(v.LessSC), 0)) +
+            SUM(ISNULL(ABS(v.lessSoloparent), 0)) +
+            SUM(ISNULL(ABS(v.lessNationalAth), 0)) +
+            SUM(ISNULL(ABS(v.lessemp), 0)) AS gross_sales,
+            -- vatable_sales: 
+            -- If lessvat = 0 (VATable): use VatableSales from source
+            -- If lessvat > 0 (VAT-exempt): 0
             CASE
-                WHEN (CASE 
-                    WHEN sp.FCRInvNumber IS NOT NULL
-                    THEN SUM(ISNULL(ABS(v.amt), 0)) - (SUM(ISNULL(ABS(v.amt), 0)) / 1.12)
-                    WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
-                    THEN SUM(ISNULL(ABS(v.Netsales), 0)) * 0.12
-                    ELSE 0
-                END) = 0
-                THEN SUM(ISNULL(ABS(v.Netsales), 0))
+                WHEN SUM(ISNULL(ABS(v.lessvat), 0)) = 0
+                THEN SUM(ISNULL(ABS(v.VatableSales), 0))
                 ELSE 0
             END AS vatable_sales,
             -- sc_vat_excempt_sales: 
-            -- For Solo Parent: use the calculated netsales
-            -- For other VAT-exempt (PWD, Senior Citizen, Zero Rated): source Netsales
-            -- For VATable transactions: 0
+            -- If lessvat > 0 (VAT-exempt): use Netsales from source
+            -- If lessvat = 0 (VATable): 0
             CASE
-                WHEN sp.FCRInvNumber IS NOT NULL
-                THEN (SUM(ISNULL(ABS(v.amt), 0)) / 1.12) -
-                     ((SUM(ISNULL(ABS(v.amt), 0)) / 1.12) * 0.10)
-                WHEN MAX(v.order_type) IN ('Zero Rated', 'PWD', 'Senior Citizen')
+                WHEN SUM(ISNULL(ABS(v.lessvat), 0)) > 0
                 THEN SUM(ISNULL(ABS(v.Netsales), 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
@@ -478,9 +396,12 @@ export async function transfer(
             source.gc_sales, source.gc_excess, source.otherdiscount,
             source.vat, source.gross_sales, source.vatable_sales, source.sc_vat_excempt_sales, source.other_tax,
             source.status, source.updated_at
-        );
+        )
+      OUTPUT $action INTO @mergeActions;
 
-    SELECT @@ROWCOUNT AS InsertedCount;
+    SELECT COUNT(*) AS InsertedCount
+    FROM @mergeActions
+    WHERE ActionName = 'INSERT';
   `;
 
   const result = await p
@@ -542,9 +463,10 @@ export async function getSummaryMetrics(
       ISNULL(SUM(lessEMP), 0) AS lessEMP,
       ISNULL(SUM(gc_excess), 0) AS gc_excess,
       ISNULL(SUM(voidtotal_amt), 0) AS void_amt,
-      ISNULL(SUM(gross_sales), 0) AS total_revenue
+      ISNULL(SUM(netsales) + SUM(vat_12), 0) AS total_revenue
     FROM dbo.dts_pitx_payload
     ${where}
+    ${where ? "AND " : "WHERE "}LOWER(status) <> 'voided'
   `);
   return res.recordset[0];
 }
@@ -619,6 +541,21 @@ export async function fetchPendingByDate(
         AND LOWER(status) NOT IN ('submitted', 'voided')
         AND (LOWER(status) = 'pending' OR retry_count < @maxRetries)
         AND (next_retry_at IS NULL OR next_retry_at <= SYSDATETIME())
+      ORDER BY businessdate ASC, transdatetime ASC
+    `);
+  return res.recordset;
+}
+
+/** Finds already-submitted transactions whose POS reversal was detected
+ * during the automation transfer. */
+export async function fetchSubmittedVoids(cfg: AppConfig): Promise<any[]> {
+  const p = await getPool(cfg);
+  const res = await p
+    .request()
+    .query(`
+      SELECT * FROM dbo.dts_pitx_payload
+      WHERE LOWER(status) = 'submitted'
+        AND (ISNULL(voidtotal_amt, 0) > 0 OR ISNULL(voidtotal_qty, 0) > 0)
       ORDER BY businessdate ASC, transdatetime ASC
     `);
   return res.recordset;

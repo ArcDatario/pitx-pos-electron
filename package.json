@@ -8,7 +8,7 @@
     "build": "tsc -p tsconfig.json",
     "start": "npm run build && electron .",
     "dev": "tsc -p tsconfig.json --watch",
-    "dist": "npm run build && electron-builder"
+    "dist": "npm run build && electron-builder --win --config.directories.output=release-fixed-new && node scripts/update-release.js"
   },
   "author": "PITX",
   "license": "UNLICENSED",
@@ -28,6 +28,9 @@
     "appId": "ph.pitx.pos.transfer",
     "productName": "PITX POS Transfer",
     "icon": "build/logo.ico",
+    "directories": {
+    "output": "release-fixed"
+    },
     "files": [
       "dist/**/*",
       "src/renderer/**/*",

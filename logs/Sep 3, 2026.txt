@@ -1,0 +1,18 @@
+[2026-09-03T00:35:28.202Z] Logger initialized
+[2026-09-03T00:35:30.290Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-09-03T00:49:41.919Z] Logger initialized
+[2026-09-03T00:49:42.648Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-09-03T00:49:42.748Z] [ERROR] [main] loadFile failed: {
+  "errno": -2,
+  "code": "ERR_FAILED",
+  "url": "file:///C:\\Users\\Loaner\\Downloads\\pitx-pos-electron\\pitx-pos-electron\\src\\renderer\\index.html"
+}
+[2026-09-03T00:49:42.755Z] [INFO] [main] trying fallback: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-09-03T00:49:42.761Z] [ERROR] (node:26604) UnhandledPromiseRejectionWarning: TypeError: Object has been destroyed
+    at _.loadURL (node:electron/js2c/browser_init:2:81449)
+    at _.loadFile (node:electron/js2c/browser_init:2:79848)
+    at n.loadFile (node:electron/js2c/browser_init:2:13720)
+    at loadFallback (C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:199:24)
+    at C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:186:13
+(Use `electron --trace-warnings ...` to show where the warning was created)
+[2026-09-03T00:49:42.763Z] [ERROR] (node:26604) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)

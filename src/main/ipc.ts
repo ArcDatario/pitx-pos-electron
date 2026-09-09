@@ -47,6 +47,57 @@ async function runAutomationCycle(cfg: AppConfig, win: BrowserWindow) {
       });
     }
 
+    const detectedVoids = await db.fetchSubmittedVoids(cfg);
+    for (let voidIndex = 0; voidIndex < detectedVoids.length; voidIndex++) {
+      const rec = detectedVoids[voidIndex];
+      const guestCheckId = String(rec.GUESTCHECKID);
+      send(win, "submit:event", {
+        type: "sending",
+        guest_check_id: guestCheckId,
+        total: detectedVoids.length,
+        index: voidIndex + 1,
+        void: true,
+        message: `Sending void for ${guestCheckId}`,
+      });
+
+      if (!rec.transaction_id) {
+        send(win, "submit:event", {
+          type: "failed_terminal",
+          guest_check_id: guestCheckId,
+          void: true,
+          message: `${guestCheckId}: No TRANSACTION_ID found for void`,
+        });
+        continue;
+      }
+
+      try {
+        const voidResult = await tsms.voidTransaction(cfg, rec.transaction_id);
+        if (voidResult.outcome === "success") {
+          await db.markVoided(cfg, guestCheckId, {});
+          send(win, "submit:event", {
+            type: "success",
+            guest_check_id: guestCheckId,
+            void: true,
+            message: `${guestCheckId}: Void submitted successfully`,
+          });
+          continue;
+        }
+        send(win, "submit:event", {
+          type: voidResult.outcome === "rate_limited" ? "rate_limited" : "failed_retry",
+          guest_check_id: guestCheckId,
+          void: true,
+          message: `${guestCheckId}: Void failed: ${voidResult.message}`,
+        });
+      } catch (e: any) {
+        send(win, "submit:event", {
+          type: "failed_retry",
+          guest_check_id: guestCheckId,
+          void: true,
+          message: `${guestCheckId}: Void failed: ${e?.message ?? String(e)}`,
+        });
+      }
+    }
+
     send(win, "submit:event", { type: "phase", message: `Automation: submitting pending records for ${today}...` });
 
     const result = await runSubmitBatch(cfg, win, today, today);
@@ -86,10 +137,13 @@ export function resumeAutomation(cfg: AppConfig, getWindow: () => BrowserWindow 
     if (win && !win.isDestroyed()) {
       startAutomationTimer(cfg, win);
     }
-    app.setLoginItemSettings({
-      openAtLogin: true,
-      openAsHidden: true,
-    });
+    if (app.isPackaged) {
+      app.setLoginItemSettings({
+        openAtLogin: true,
+        openAsHidden: true,
+        path: process.execPath,
+      });
+    }
   }
 }
 
@@ -386,74 +440,6 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     return { ok: true, payload };
   });
 
-  // ---------- Automation ----------
-  let automationEnabled = false;
-  let automationTimer: NodeJS.Timeout | null = null;
-  let automationRunning = false;
-
-  function getAutomationToday(): string {
-    return new Date().toISOString().slice(0, 10);
-  }
-
-  async function runAutomationCycle(cfg: AppConfig, win: BrowserWindow) {
-    if (automationRunning) return;
-    if (!win || win.isDestroyed()) return;
-    automationRunning = true;
-    controller = { abort: false, paused: false, pauseNotified: false };
-
-    try {
-      const today = getAutomationToday();
-      send(win, "submit:event", { type: "phase", message: `Automation: processing ${today}...` });
-
-      let inserted = 0;
-      try {
-        inserted = await db.transfer(cfg, today, today);
-        send(win, "submit:event", {
-          type: "insert_done",
-          date: today,
-          inserted,
-          message: `Automation: inserted ${inserted} new transaction(s) for ${today}`,
-        });
-      } catch (e: any) {
-        send(win, "submit:event", {
-          type: "insert_failed",
-          date: today,
-          message: `Automation insert failed for ${today}: ${e?.message ?? String(e)}`,
-        });
-      }
-
-      send(win, "submit:event", { type: "phase", message: `Automation: submitting pending records for ${today}...` });
-
-      const result = await runSubmitBatch(cfg, win, today, today);
-
-      send(win, "submit:event", {
-        type: "phase",
-        message: `Automation cycle done for ${today} — ${inserted} inserted, ${result.successCount} submitted, ${result.failCount} failed`,
-      });
-    } catch (e: any) {
-      send(win, "submit:event", { type: "phase", message: `Automation error: ${e?.message ?? String(e)}` });
-    } finally {
-      automationRunning = false;
-    }
-  }
-
-  function startAutomationTimer(cfg: AppConfig, win: BrowserWindow) {
-    stopAutomationTimer();
-    const intervalMs = (cfg.worker.poll_interval_seconds || 60) * 1000;
-    automationTimer = setInterval(() => {
-      if (!automationEnabled) return;
-      runAutomationCycle(cfg, win);
-    }, intervalMs);
-    runAutomationCycle(cfg, win);
-  }
-
-  function stopAutomationTimer() {
-    if (automationTimer) {
-      clearInterval(automationTimer);
-      automationTimer = null;
-    }
-  }
-
   ipcMain.handle("automation:start", async (_e) => {
     const cfg = loadConfig();
     cfg.automation_enabled = true;
@@ -478,6 +464,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
 
     automationEnabled = false;
     stopAutomationTimer();
+    app.setLoginItemSettings({ openAtLogin: false });
 
     return { ok: true };
   });

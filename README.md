@@ -79,7 +79,7 @@ npm run dist
 This runs `electron-builder` using the `build` block in `package.json`
 (NSIS installer, targets `win`). Drop a real `.ico` at `build/icon.ico`
 first — there's a placeholder gap there since I can't generate binary icon
-files. Output lands in `release/`.
+files. Output lands in `release-fixed/`.
 
 ## Feature parity checklist (vs. the Tkinter app)
 

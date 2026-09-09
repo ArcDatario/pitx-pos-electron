@@ -1,0 +1,4 @@
+[2026-09-08T17:11:48.639Z] Logger initialized
+[2026-09-08T17:11:48.788Z] [INFO] [main] loading HTML from: C:\Users\J.CO Arc\Github\pitx-pos-electron\src\renderer\index.html
+[2026-09-08T08:32:41.439Z] Logger initialized
+[2026-09-08T08:32:41.543Z] [INFO] [main] loading HTML from: C:\Users\J.CO Arc\Github\pitx-pos-electron\src\renderer\index.html

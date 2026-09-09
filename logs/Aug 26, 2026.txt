@@ -1,0 +1,179 @@
+[2026-08-26T05:12:49.262Z] Logger initialized
+[2026-08-26T05:12:49.589Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T05:17:04.211Z] [INFO] [000000000661] Successfully marked as submitted.
+[2026-08-26T05:17:06.518Z] [INFO] [000000000662] Successfully marked as submitted.
+[2026-08-26T05:17:08.741Z] [INFO] [000000000663] Successfully marked as submitted.
+[2026-08-26T05:17:11.035Z] [INFO] [000000000664] Successfully marked as submitted.
+[2026-08-26T05:17:12.560Z] [INFO] [000000000665] Successfully marked as submitted.
+[2026-08-26T05:17:15.101Z] [INFO] [000000000666] Successfully marked as submitted.
+[2026-08-26T05:17:15.102Z] [INFO] [000000000667] VOID detected: qty=2, amt=230
+[2026-08-26T05:17:16.331Z] [INFO] [000000000667] Transaction submitted OK, now calling void API...
+[2026-08-26T05:17:21.468Z] [INFO] [000000000667] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T05:17:22.015Z] [INFO] [000000000667] Successfully marked as voided.
+[2026-08-26T05:22:06.300Z] Logger initialized
+[2026-08-26T05:22:06.810Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T05:23:32.440Z] [INFO] [000000000648] Successfully marked as submitted.
+[2026-08-26T05:23:34.529Z] [INFO] [000000000649] Successfully marked as submitted.
+[2026-08-26T05:23:37.180Z] [INFO] [000000000650] Successfully marked as submitted.
+[2026-08-26T05:23:41.048Z] [INFO] [000000000651] Successfully marked as submitted.
+[2026-08-26T05:23:44.172Z] [INFO] [000000000652] Successfully marked as submitted.
+[2026-08-26T05:23:44.174Z] [INFO] [000000000647] VOID detected: qty=1, amt=49
+[2026-08-26T05:23:46.347Z] [INFO] [000000000647] Transaction submitted OK, now calling void API...
+[2026-08-26T05:23:51.465Z] [INFO] [000000000647] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T05:23:52.024Z] [INFO] [000000000647] Successfully marked as voided.
+[2026-08-26T05:23:53.941Z] [INFO] [000000000653] Successfully marked as submitted.
+[2026-08-26T05:23:56.108Z] [INFO] [000000000654] Successfully marked as submitted.
+[2026-08-26T05:23:58.263Z] [INFO] [000000000655] Successfully marked as submitted.
+[2026-08-26T05:24:00.953Z] [INFO] [000000000656] Successfully marked as submitted.
+[2026-08-26T05:24:03.552Z] [INFO] [000000000657] Successfully marked as submitted.
+[2026-08-26T05:24:05.807Z] [INFO] [000000000658] Successfully marked as submitted.
+[2026-08-26T05:24:08.076Z] [INFO] [000000000659] Successfully marked as submitted.
+[2026-08-26T05:24:59.674Z] [INFO] [000000000661] Successfully marked as submitted.
+[2026-08-26T05:25:01.367Z] [INFO] [000000000662] Successfully marked as submitted.
+[2026-08-26T05:25:04.438Z] [INFO] [000000000663] Successfully marked as submitted.
+[2026-08-26T05:25:08.316Z] [INFO] [000000000664] Successfully marked as submitted.
+[2026-08-26T05:25:10.202Z] [INFO] [000000000665] Successfully marked as submitted.
+[2026-08-26T05:25:12.504Z] [INFO] [000000000666] Successfully marked as submitted.
+[2026-08-26T05:25:12.505Z] [INFO] [000000000667] VOID detected: qty=2, amt=230
+[2026-08-26T05:25:15.010Z] [INFO] [000000000667] Transaction submitted OK, now calling void API...
+[2026-08-26T05:25:20.448Z] [INFO] [000000000667] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T05:25:21.056Z] [INFO] [000000000667] Successfully marked as voided.
+[2026-08-26T05:35:21.906Z] Logger initialized
+[2026-08-26T05:35:22.155Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T05:37:06.000Z] [INFO] [000000000661] Successfully marked as submitted.
+[2026-08-26T05:37:08.114Z] [INFO] [000000000662] Successfully marked as submitted.
+[2026-08-26T05:37:10.332Z] [INFO] [000000000663] Successfully marked as submitted.
+[2026-08-26T05:37:11.912Z] [INFO] [000000000664] Successfully marked as submitted.
+[2026-08-26T05:37:13.523Z] [INFO] [000000000665] Successfully marked as submitted.
+[2026-08-26T05:37:15.181Z] [INFO] [000000000666] Successfully marked as submitted.
+[2026-08-26T05:37:15.182Z] [INFO] [000000000667] VOID detected: qty=2, amt=230
+[2026-08-26T05:37:16.781Z] [INFO] [000000000667] Transaction submitted OK, now calling void API...
+[2026-08-26T05:37:21.869Z] [INFO] [000000000667] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T05:37:22.424Z] [INFO] [000000000667] Successfully marked as voided.
+[2026-08-26T05:46:33.188Z] [INFO] [000000000002] VOID detected: qty=2, amt=98
+[2026-08-26T05:46:34.458Z] [INFO] [000000000002] Transaction submitted OK, now calling void API...
+[2026-08-26T05:46:39.553Z] [INFO] [000000000002] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T05:46:40.106Z] [INFO] [000000000002] Successfully marked as voided.
+[2026-08-26T05:46:42.484Z] [INFO] [000000000668] Successfully marked as submitted.
+[2026-08-26T05:46:44.404Z] [INFO] [000000000669] Successfully marked as submitted.
+[2026-08-26T05:46:46.596Z] [INFO] [000000000670] Successfully marked as submitted.
+[2026-08-26T05:47:34.944Z] [INFO] [000000000671] Successfully marked as submitted.
+[2026-08-26T05:47:50.768Z] [INFO] [000000000002] VOID detected: qty=2, amt=98
+[2026-08-26T05:47:51.673Z] [INFO] [000000000002] Transaction submitted OK, now calling void API...
+[2026-08-26T05:47:56.778Z] [INFO] [000000000002] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T05:47:57.340Z] [INFO] [000000000002] Successfully marked as voided.
+[2026-08-26T05:47:58.905Z] [INFO] [000000000668] Successfully marked as submitted.
+[2026-08-26T05:48:00.491Z] [INFO] [000000000669] Successfully marked as submitted.
+[2026-08-26T05:48:02.563Z] [INFO] [000000000670] Successfully marked as submitted.
+[2026-08-26T05:48:04.125Z] [INFO] [000000000671] Successfully marked as submitted.
+[2026-08-26T05:56:53.326Z] [INFO] [000000000672] Successfully marked as submitted.
+[2026-08-26T05:57:53.972Z] [INFO] [000000000673] Successfully marked as submitted.
+[2026-08-26T06:05:44.328Z] Logger initialized
+[2026-08-26T06:05:44.926Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T06:11:45.180Z] [INFO] [000000000674] Successfully marked as submitted.
+[2026-08-26T06:11:46.801Z] [INFO] [000000000675] Successfully marked as submitted.
+[2026-08-26T06:12:11.247Z] [INFO] [000000000676] Successfully marked as submitted.
+[2026-08-26T06:12:50.867Z] [INFO] [000000000677] Successfully marked as submitted.
+[2026-08-26T06:13:30.465Z] [INFO] [000000000678] Successfully marked as submitted.
+[2026-08-26T06:20:01.479Z] Logger initialized
+[2026-08-26T06:20:01.772Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T06:21:31.103Z] [INFO] [000000000679] Successfully marked as submitted.
+[2026-08-26T06:21:56.457Z] [INFO] [000000000680] Successfully marked as submitted.
+[2026-08-26T06:22:30.719Z] [INFO] [000000000681] Successfully marked as submitted.
+[2026-08-26T06:48:15.382Z] Logger initialized
+[2026-08-26T06:48:15.837Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T06:49:34.144Z] [INFO] [000000000002] VOID detected: qty=2, amt=98
+[2026-08-26T06:49:35.265Z] [INFO] [000000000002] Transaction submitted OK, now calling void API...
+[2026-08-26T06:49:40.360Z] [INFO] [000000000002] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T06:49:40.918Z] [INFO] [000000000002] Successfully marked as voided.
+[2026-08-26T06:49:42.975Z] [INFO] [000000000668] Successfully marked as submitted.
+[2026-08-26T06:49:45.073Z] [INFO] [000000000669] Successfully marked as submitted.
+[2026-08-26T06:49:47.192Z] [INFO] [000000000670] Successfully marked as submitted.
+[2026-08-26T06:49:48.871Z] [INFO] [000000000671] Successfully marked as submitted.
+[2026-08-26T06:49:50.429Z] [INFO] [000000000672] Successfully marked as submitted.
+[2026-08-26T06:49:52.208Z] [INFO] [000000000673] Successfully marked as submitted.
+[2026-08-26T06:49:54.227Z] [INFO] [000000000674] Successfully marked as submitted.
+[2026-08-26T06:49:55.843Z] [INFO] [000000000675] Successfully marked as submitted.
+[2026-08-26T06:49:57.453Z] [INFO] [000000000676] Successfully marked as submitted.
+[2026-08-26T06:49:58.996Z] [INFO] [000000000677] Successfully marked as submitted.
+[2026-08-26T06:50:01.091Z] [INFO] [000000000678] Successfully marked as submitted.
+[2026-08-26T06:50:02.697Z] [INFO] [000000000679] Successfully marked as submitted.
+[2026-08-26T06:50:05.309Z] [INFO] [000000000680] Successfully marked as submitted.
+[2026-08-26T06:50:07.370Z] [INFO] [000000000681] Successfully marked as submitted.
+[2026-08-26T06:50:09.100Z] [INFO] [000000000682] Successfully marked as submitted.
+[2026-08-26T06:51:11.505Z] [INFO] [000000000661] Successfully marked as submitted.
+[2026-08-26T06:51:13.723Z] [INFO] [000000000662] Successfully marked as submitted.
+[2026-08-26T06:51:15.649Z] [INFO] [000000000663] Successfully marked as submitted.
+[2026-08-26T06:51:17.381Z] [INFO] [000000000664] Successfully marked as submitted.
+[2026-08-26T06:51:18.933Z] [INFO] [000000000665] Successfully marked as submitted.
+[2026-08-26T06:51:21.061Z] [INFO] [000000000666] Successfully marked as submitted.
+[2026-08-26T06:51:21.062Z] [INFO] [000000000667] VOID detected: qty=2, amt=230
+[2026-08-26T06:51:22.101Z] [INFO] [000000000667] Transaction submitted OK, now calling void API...
+[2026-08-26T06:51:27.217Z] [INFO] [000000000667] Void API result: outcome=success, http=200, message=Transaction voided successfully by POS
+[2026-08-26T06:51:27.770Z] [INFO] [000000000667] Successfully marked as voided.
+[2026-08-26T07:13:12.104Z] Logger initialized
+[2026-08-26T07:13:12.743Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:13:12.917Z] [ERROR] [main] loadFile failed: {
+  "errno": -2,
+  "code": "ERR_FAILED",
+  "url": "file:///C:\\Users\\Loaner\\Downloads\\pitx-pos-electron\\pitx-pos-electron\\src\\renderer\\index.html"
+}
+[2026-08-26T07:13:12.922Z] [INFO] [main] trying fallback: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:13:12.926Z] [ERROR] (node:3464) UnhandledPromiseRejectionWarning: TypeError: Object has been destroyed
+    at _.loadURL (node:electron/js2c/browser_init:2:81449)
+    at _.loadFile (node:electron/js2c/browser_init:2:79848)
+    at n.loadFile (node:electron/js2c/browser_init:2:13720)
+    at loadFallback (C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:199:24)
+    at C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:186:13
+(Use `electron --trace-warnings ...` to show where the warning was created)
+[2026-08-26T07:13:12.927Z] [ERROR] (node:3464) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+[2026-08-26T07:25:47.052Z] Logger initialized
+[2026-08-26T07:25:48.357Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:25:48.588Z] [ERROR] [main] loadFile failed: {
+  "errno": -2,
+  "code": "ERR_FAILED",
+  "url": "file:///C:\\Users\\Loaner\\Downloads\\pitx-pos-electron\\pitx-pos-electron\\src\\renderer\\index.html"
+}
+[2026-08-26T07:25:48.598Z] [INFO] [main] trying fallback: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:25:48.607Z] [ERROR] (node:8048) UnhandledPromiseRejectionWarning: TypeError: Object has been destroyed
+    at _.loadURL (node:electron/js2c/browser_init:2:81449)
+    at _.loadFile (node:electron/js2c/browser_init:2:79848)
+    at n.loadFile (node:electron/js2c/browser_init:2:13720)
+    at loadFallback (C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:199:24)
+    at C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:186:13
+(Use `electron --trace-warnings ...` to show where the warning was created)
+[2026-08-26T07:25:48.610Z] [ERROR] (node:8048) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+[2026-08-26T07:30:17.106Z] Logger initialized
+[2026-08-26T07:30:17.667Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:30:17.893Z] [ERROR] [main] loadFile failed: {
+  "errno": -2,
+  "code": "ERR_FAILED",
+  "url": "file:///C:\\Users\\Loaner\\Downloads\\pitx-pos-electron\\pitx-pos-electron\\src\\renderer\\index.html"
+}
+[2026-08-26T07:30:17.898Z] [INFO] [main] trying fallback: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:30:17.903Z] [ERROR] (node:31220) UnhandledPromiseRejectionWarning: TypeError: Object has been destroyed
+    at _.loadURL (node:electron/js2c/browser_init:2:81449)
+    at _.loadFile (node:electron/js2c/browser_init:2:79848)
+    at n.loadFile (node:electron/js2c/browser_init:2:13720)
+    at loadFallback (C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:199:24)
+    at C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:186:13
+(Use `electron --trace-warnings ...` to show where the warning was created)
+[2026-08-26T07:30:17.904Z] [ERROR] (node:31220) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+[2026-08-26T07:35:54.400Z] Logger initialized
+[2026-08-26T07:35:55.609Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:35:55.955Z] [ERROR] [main] loadFile failed: {
+  "errno": -2,
+  "code": "ERR_FAILED",
+  "url": "file:///C:\\Users\\Loaner\\Downloads\\pitx-pos-electron\\pitx-pos-electron\\src\\renderer\\index.html"
+}
+[2026-08-26T07:35:55.970Z] [INFO] [main] trying fallback: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html
+[2026-08-26T07:35:55.986Z] [ERROR] (node:32828) UnhandledPromiseRejectionWarning: TypeError: Object has been destroyed
+    at _.loadURL (node:electron/js2c/browser_init:2:81449)
+    at _.loadFile (node:electron/js2c/browser_init:2:79848)
+    at n.loadFile (node:electron/js2c/browser_init:2:13720)
+    at loadFallback (C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:199:24)
+    at C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\dist\main\main.js:186:13
+(Use `electron --trace-warnings ...` to show where the warning was created)
+[2026-08-26T07:35:55.996Z] [ERROR] (node:32828) UnhandledPromiseRejectionWarning: Unhandled promise rejection. This error originated either by throwing inside of an async function without a catch block, or by rejecting a promise which was not handled with .catch(). To terminate the node process on unhandled promise rejection, use the CLI flag `--unhandled-rejections=strict` (see https://nodejs.org/api/cli.html#cli_unhandled_rejections_mode). (rejection id: 1)
+[2026-08-26T07:36:07.680Z] Logger initialized
+[2026-08-26T07:36:07.858Z] [INFO] [main] loading HTML from: C:\Users\Loaner\Downloads\pitx-pos-electron\pitx-pos-electron\src\renderer\index.html

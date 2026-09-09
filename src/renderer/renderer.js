@@ -34,7 +34,13 @@ const COLUMNS = [
 ];
 
 const $ = (id) => document.getElementById(id);
-const fmt = (n) => (typeof n === "number" ? n.toFixed(2) : n ?? "0.00");
+const fmt = (n) => {
+  if (n === null || n === undefined || n === "") return "0.00";
+  const value = Number(n);
+  return Number.isFinite(value)
+    ? value.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+    : String(n);
+};
 
 const pad = (n) => String(n).padStart(2, "0");
 
@@ -44,8 +50,8 @@ function fmtDate(v) {
   if (!v) return "";
   if (v instanceof Date) {
     return (
-      pad(v.getFullYear()) + "-" + pad(v.getMonth() + 1) + "-" + pad(v.getDate()) +
-      " " + pad(v.getHours()) + ":" + pad(v.getMinutes()) + ":" + pad(v.getSeconds())
+      pad(v.getUTCFullYear()) + "-" + pad(v.getUTCMonth() + 1) + "-" + pad(v.getUTCDate()) +
+      " " + pad(v.getUTCHours()) + ":" + pad(v.getUTCMinutes()) + ":" + pad(v.getUTCSeconds())
     );
   }
   return String(v)
@@ -418,6 +424,11 @@ function datedLog(type, message) {
   body.appendChild(line);
   body.scrollTop = body.scrollHeight;
 }
+
+function cleanAcceptedSubmissionMessage(message) {
+  return String(message).replace(/\s*:\s*\d+\s+pending,\s*\d+\s+failed\s*$/i, "");
+}
+
 $("btnDatedClearLog").addEventListener("click", () => {
   $("datedLogBody").innerHTML = "";
 });
@@ -541,7 +552,7 @@ function resolveBuildChip(guestCheckId, lane) {
 }
 
 window.pos.onSubmitEvent((event) => {
-  if (!datedState.submitting) return;
+  if (!datedState.submitting && !datedState.automation) return;
 
   switch (event.type) {
     case "insert_start":
@@ -553,10 +564,12 @@ window.pos.onSubmitEvent((event) => {
       break;
     case "insert_done":
       $("stageFetch").classList.remove("active");
-      $("fetchCount").textContent = `${event.inserted} inserted`;
-      setDatedStatus(event.message);
-      setProgressIndeterminate("Preparing submission...");
-      datedLog("success", event.message);
+      const inserted = Number(event.inserted) || 0;
+      $("fetchCount").textContent = inserted === 0
+        ? "No new transactions"
+        : `${inserted} new transaction${inserted === 1 ? "" : "s"}`;
+      setDatedStatus(inserted === 0 ? "No new transactions found" : event.message);
+      setProgressIndeterminate(inserted === 0 ? "Checking for pending submissions..." : "Preparing submission...");
       break;
     case "insert_failed":
       $("stageFetch").classList.remove("active");
@@ -580,10 +593,14 @@ window.pos.onSubmitEvent((event) => {
       $("flowFetchToBuild").classList.remove("active");
       addBuildChip(event.guest_check_id);
       setDatedStatus(`Building payload for ${event.guest_check_id} (${event.index}/${event.total})`);
+      datedLog("phase", event.message);
       break;
     case "success":
       resolveBuildChip(event.guest_check_id, event.void ? "Voided" : "Submitted");
-      datedLog(event.void ? "warning" : "success", event.message);
+      datedLog(
+        event.void ? "warning" : "success",
+        event.void ? event.message : cleanAcceptedSubmissionMessage(event.message)
+      );
       bumpProgress();
       break;
     case "rate_limited":
@@ -599,11 +616,22 @@ window.pos.onSubmitEvent((event) => {
         setProgress(100, `${datedState.total} / ${datedState.total} (100%)`, "done");
       }
       datedLog("phase", event.message);
+      if (datedState.automation) {
+        toggleDatedSubmittingUi(false);
+        setDatedStatus(`Automation waiting for next cycle — ${event.message}`);
+      }
       break;
     case "batch_done":
       datedLog("phase", event.message);
       break;
     case "phase":
+      if (datedState.automation && event.message.includes("Automation: processing")) {
+        resetPipeline();
+        toggleDatedSubmittingUi(true);
+        $("stageFetch").classList.add("active");
+        $("flowFetchToBuild").classList.add("active");
+        setProgressIndeterminate("Watching for new transactions...");
+      }
       datedLog("phase", event.message);
       break;
   }
@@ -1014,6 +1042,10 @@ async function boot() {
   $("pageInfo").textContent = "";
 
   try {
+    if (state.config.automation_enabled) {
+      datedState.automation = true;
+      setAutomationUi(true, true);
+    }
     const autoStatus = await window.pos.getAutomationStatus();
     if (autoStatus && autoStatus.enabled) {
       datedState.automation = true;

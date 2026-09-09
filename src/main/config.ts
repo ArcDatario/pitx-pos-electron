@@ -61,7 +61,7 @@ export const DEFAULT_CONFIG: AppConfig = {
     auto_receipt_no: false,
   },
   worker: {
-    poll_interval_seconds: 60,
+    poll_interval_seconds: 10,
     batch_size: 100,
     max_retries: 5,
   },

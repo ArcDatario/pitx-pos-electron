@@ -214,12 +214,16 @@ app.whenReady().then(() => {
   buildTray();
   createWindow();
 
-  if (cfg.automation_enabled) {
+  if (cfg.automation_enabled && app.isPackaged) {
     resumeAutomation(cfg, () => mainWindow);
     app.setLoginItemSettings({
       openAtLogin: true,
       openAsHidden: true,
+      path: process.execPath,
     });
+  } else if (!app.isPackaged) {
+    // Remove any startup entry created while running the development app.
+    app.setLoginItemSettings({ openAtLogin: false });
   }
 
   app.on("activate", () => {
