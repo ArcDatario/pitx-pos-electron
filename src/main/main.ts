@@ -10,6 +10,10 @@ let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
 
+function getAppIconPath() {
+  return path.join(app.getAppPath(), "build", "logo.ico");
+}
+
 autoUpdater.autoDownload = false;
 autoUpdater.autoInstallOnAppQuit = true;
 
@@ -41,7 +45,7 @@ if (!gotSingleInstanceLock) {
 app.disableHardwareAcceleration();
 
 function buildTray() {
-  const iconPath = path.join(__dirname, "../../build/logo.ico");
+  const iconPath = getAppIconPath();
   const trayIcon = nativeImage.createFromPath(iconPath);
   tray = new Tray(trayIcon.resize({ width: 16, height: 16 }));
 
@@ -147,7 +151,7 @@ function createWindow() {
     minHeight: 720,
     backgroundColor: "#f5f7fa",
     title: "PITX POS Transfer",
-    icon: path.join(__dirname, "../../build/logo.ico"),
+    icon: getAppIconPath(),
     webPreferences: {
       preload: path.join(__dirname, "../preload/preload.js"),
       contextIsolation: true,

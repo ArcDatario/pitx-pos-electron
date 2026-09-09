@@ -1109,6 +1109,10 @@ async function checkStartupConnection() {
   settingsBtn.classList.add("hidden");
 
   async function attempt() {
+    status.textContent = "Connecting...";
+    details.textContent = "Checking SQL Server connection...";
+    retryBtn.classList.add("hidden");
+    settingsBtn.classList.add("hidden");
     try {
       const res = await window.pos.testConnection(state.config);
       if (res.ok) {
@@ -1119,9 +1123,13 @@ async function checkStartupConnection() {
         }, 400);
         return true;
       } else {
+        status.textContent = "Connection failed";
+        details.textContent = res.message || "Unable to connect to SQL Server.";
         return false;
       }
     } catch (e) {
+      status.textContent = "Connection failed";
+      details.textContent = e?.message || String(e);
       return false;
     }
   }
@@ -1134,6 +1142,7 @@ async function checkStartupConnection() {
   }
 
   if (!connected) {
+    status.textContent = "Unable to connect";
     retryBtn.classList.remove("hidden");
     settingsBtn.classList.remove("hidden");
   }
