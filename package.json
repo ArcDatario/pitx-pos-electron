@@ -40,6 +40,7 @@
     ],
     "win": {
       "target": "nsis",
+      "artifactName": "PITX-POS-Transfer-Setup-${version}.${ext}",
       "signAndEditExecutable": false
     },
     "publish": {
