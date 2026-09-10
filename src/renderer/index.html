@@ -238,6 +238,21 @@
       <!-- SETTINGS TAB -->
       <section class="panel" id="panel-settings">
         <div class="card">
+          <div class="settings-version-row">
+            <span>Current App Version</span>
+            <strong id="appVersion">Checking...</strong>
+          </div>
+          <div class="settings-update-row">
+            <div>
+              <strong>Application Updates</strong>
+              <div class="status-text" id="settingsUpdateStatus">Checking for updates...</div>
+            </div>
+            <div class="actions settings-update-actions">
+              <button class="btn ghost sm" id="btnCheckForUpdates">Check for updates</button>
+              <button class="btn primary sm hidden" id="btnSettingsDownloadUpdate">Update available</button>
+              <button class="btn success sm hidden" id="btnSettingsInstallUpdate">Restart to update</button>
+            </div>
+          </div>
           <h3>SQL Server</h3>
           <div class="row g-3">
             <div class="col-12 col-md-6"><div class="field"><label>Server</label><input id="s_sqlserver_server" /></div></div>

@@ -123,6 +123,10 @@ const updateBanner = $("updateBanner");
 const updateMessage = $("updateMessage");
 const downloadUpdateButton = $("btnDownloadUpdate");
 const installUpdateButton = $("btnInstallUpdate");
+const checkForUpdatesButton = $("btnCheckForUpdates");
+const settingsDownloadUpdateButton = $("btnSettingsDownloadUpdate");
+const settingsInstallUpdateButton = $("btnSettingsInstallUpdate");
+const settingsUpdateStatus = $("settingsUpdateStatus");
 
 function showUpdateBanner(message) {
   updateMessage.textContent = message;
@@ -131,23 +135,55 @@ function showUpdateBanner(message) {
 
 downloadUpdateButton.addEventListener("click", async () => {
   downloadUpdateButton.disabled = true;
+  settingsDownloadUpdateButton.classList.add("hidden");
   showUpdateBanner("Downloading update...");
+  settingsUpdateStatus.textContent = "Downloading update...";
   await window.pos.downloadUpdate();
 });
 
 installUpdateButton.addEventListener("click", () => window.pos.installUpdate());
+settingsInstallUpdateButton.addEventListener("click", () => window.pos.installUpdate());
+settingsDownloadUpdateButton.addEventListener("click", async () => {
+  settingsDownloadUpdateButton.disabled = true;
+  settingsUpdateStatus.textContent = "Downloading update...";
+  showUpdateBanner("Downloading update...");
+  await window.pos.downloadUpdate();
+});
+checkForUpdatesButton.addEventListener("click", async () => {
+  checkForUpdatesButton.disabled = true;
+  settingsUpdateStatus.textContent = "Checking for updates...";
+  try {
+    await window.pos.checkForUpdates();
+  } catch (error) {
+    settingsUpdateStatus.textContent = `Update check failed: ${error.message}`;
+  } finally {
+    checkForUpdatesButton.disabled = false;
+  }
+});
 $("btnDismissUpdate").addEventListener("click", () => updateBanner.classList.add("hidden"));
 
 window.pos.onUpdateEvent((event) => {
   if (event.type === "available") {
     showUpdateBanner(`Version ${event.version} is available.`);
     downloadUpdateButton.classList.remove("hidden");
+    settingsDownloadUpdateButton.classList.remove("hidden");
+    settingsUpdateStatus.textContent = `Version ${event.version} is available.`;
+  } else if (event.type === "checking") {
+    settingsUpdateStatus.textContent = "Checking for updates...";
+  } else if (event.type === "not-available") {
+    settingsUpdateStatus.textContent = "You are using the latest version.";
   } else if (event.type === "downloading") {
     showUpdateBanner(`Downloading update... ${event.percent}%`);
+    settingsUpdateStatus.textContent = `Downloading update... ${event.percent}%`;
   } else if (event.type === "downloaded") {
     showUpdateBanner(`Version ${event.version} is ready to install.`);
     downloadUpdateButton.classList.add("hidden");
     installUpdateButton.classList.remove("hidden");
+    settingsDownloadUpdateButton.classList.add("hidden");
+    settingsInstallUpdateButton.classList.remove("hidden");
+    settingsUpdateStatus.textContent = `Version ${event.version} is ready to install.`;
+  } else if (event.type === "error") {
+    settingsUpdateStatus.textContent = `Update check failed: ${event.message}`;
   }
 });
 
@@ -1058,6 +1094,8 @@ $("btnCreateTable").addEventListener("click", async () => {
 async function boot() {
   initTheme();
   renderTableHead();
+  $("appVersion").textContent = await window.pos.getAppVersion();
+  const hasConfigFile = await window.pos.hasConfigFile();
   state.config = await window.pos.getConfig();
   fillSettingsForm(state.config);
   $("connSub").textContent = `${state.config.sqlserver.server} / ${state.config.sqlserver.database}`;
@@ -1086,6 +1124,13 @@ async function boot() {
     }
   } catch (e) {
     console.error("[boot] automation status sync failed", e);
+  }
+
+  if (!hasConfigFile) {
+    $("connectionScreen").classList.add("hidden");
+    switchTab("settings");
+    $("settingsStatus").textContent = "First setup: enter your database and API credentials, then click Save.";
+    return;
   }
 
   await checkStartupConnection();

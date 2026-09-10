@@ -2,6 +2,7 @@ import { contextBridge, ipcRenderer } from "electron";
 
 contextBridge.exposeInMainWorld("pos", {
   getConfig: () => ipcRenderer.invoke("config:get"),
+  hasConfigFile: () => ipcRenderer.invoke("config:has-file"),
   saveConfig: (cfg: unknown) => ipcRenderer.invoke("config:save", cfg),
   getConfigPath: () => ipcRenderer.invoke("config:path"),
   testConnection: (cfg: unknown) => ipcRenderer.invoke("config:test-connection", cfg),
@@ -38,6 +39,7 @@ contextBridge.exposeInMainWorld("pos", {
   ipcRenderer.on("nav:settings", () => callback());
 },
   quitApp: () => ipcRenderer.invoke("app:quit"),
+  getAppVersion: () => ipcRenderer.invoke("app:version"),
   checkForUpdates: () => ipcRenderer.invoke("app:update-check"),
   downloadUpdate: () => ipcRenderer.invoke("app:update-download"),
   installUpdate: () => ipcRenderer.invoke("app:update-install"),

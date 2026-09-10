@@ -9,6 +9,7 @@ import { autoUpdater } from "electron-updater";
 let mainWindow: BrowserWindow | null = null;
 let tray: Tray | null = null;
 let isQuitting = false;
+let updateCheckTimer: NodeJS.Timeout | null = null;
 
 function getAppIconPath() {
   return path.join(app.getAppPath(), "build", "logo.ico");
@@ -240,9 +241,14 @@ function configureAutoUpdater() {
     sendUpdateEvent("error", { message: error.message });
   });
 
-  autoUpdater.checkForUpdates().catch((error) => {
-    console.error("[main] update check failed:", error);
-  });
+  const check = () => {
+    autoUpdater.checkForUpdates().catch((error) => {
+      console.error("[main] update check failed:", error);
+    });
+  };
+
+  setTimeout(check, 5000);
+  updateCheckTimer = setInterval(check, 15 * 60 * 1000);
 }
 
 app.whenReady().then(() => {
@@ -277,4 +283,5 @@ app.on("window-all-closed", () => {
 
 app.on("before-quit", () => {
   isQuitting = true;
+  if (updateCheckTimer) clearInterval(updateCheckTimer);
 });

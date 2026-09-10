@@ -69,15 +69,16 @@ export const DEFAULT_CONFIG: AppConfig = {
 };
 
 /**
- * Mirrors the Python app's behaviour: a persistent, editable config.json
- * lives next to the executable (userData in dev) and is seeded from a
- * bundled default on first run.
+ * Keep installed-user settings outside the application directory so updates
+ * and Windows Program Files permissions cannot replace or block them.
  */
 function getConfigPath(): string {
-  const dir = app.isPackaged
-    ? path.dirname(app.getPath("exe"))
-    : path.join(app.getAppPath());
+  const dir = app.isPackaged ? app.getPath("userData") : app.getAppPath();
   return path.join(dir, "config.json");
+}
+
+function getLegacyConfigPath(): string {
+  return path.join(path.dirname(app.getPath("exe")), "config.json");
 }
 
 function getBundledDefaultPath(): string | null {
@@ -87,6 +88,14 @@ function getBundledDefaultPath(): string | null {
 
 export function loadConfig(): AppConfig {
   const configPath = getConfigPath();
+
+  if (app.isPackaged && !fs.existsSync(configPath)) {
+    const legacyPath = getLegacyConfigPath();
+    if (fs.existsSync(legacyPath)) {
+      fs.mkdirSync(path.dirname(configPath), { recursive: true });
+      fs.copyFileSync(legacyPath, configPath);
+    }
+  }
 
   if (!fs.existsSync(configPath)) {
     const bundled = getBundledDefaultPath();
@@ -110,4 +119,8 @@ export function saveConfig(cfg: AppConfig): void {
 
 export function getConfigFilePath(): string {
   return getConfigPath();
+}
+
+export function hasConfigFile(): boolean {
+  return fs.existsSync(getConfigPath()) || (app.isPackaged && fs.existsSync(getLegacyConfigPath()));
 }
