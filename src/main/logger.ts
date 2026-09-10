@@ -2,10 +2,10 @@ import { app } from "electron";
 import * as fs from "fs";
 import * as path from "path";
 
-const LOGS_DIR = path.join(
-  app.isPackaged ? path.dirname(app.getPath("exe")) : app.getAppPath(),
-  "logs"
-);
+function getLogsDir(): string {
+  const baseDir = app.isPackaged ? app.getPath("userData") : app.getAppPath();
+  return path.join(baseDir, "logs");
+}
 
 function getLogFileName(): string {
   const now = new Date();
@@ -18,12 +18,13 @@ function getLogFileName(): string {
 }
 
 function getLogFilePath(): string {
-  return path.join(LOGS_DIR, getLogFileName());
+  return path.join(getLogsDir(), getLogFileName());
 }
 
 function ensureLogsReady(): void {
-  if (!fs.existsSync(LOGS_DIR)) {
-    fs.mkdirSync(LOGS_DIR, { recursive: true });
+  const logsDir = getLogsDir();
+  if (!fs.existsSync(logsDir)) {
+    fs.mkdirSync(logsDir, { recursive: true });
   }
 }
 
