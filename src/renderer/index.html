@@ -39,6 +39,7 @@
            <nav class="tabs" id="tabs">
              <button class="tab active" data-tab="dated">Home</button>
              <button class="tab" data-tab="transfer">Transaction</button>
+             <button class="tab" data-tab="report">Report</button>
               <button class="tab icon" data-tab="settings" title="Settings">
                <i class="bi bi-gear"></i>
              </button>
@@ -78,6 +79,7 @@
             <div class="field grow"></div>
             <button class="btn ghost" id="btnReset">Reset</button>
             <button class="btn primary" id="btnApply">Apply</button>
+            <button class="btn success" id="btnExportTransactions"><i class="bi bi-file-earmark-spreadsheet"></i> Export Excel</button>
           </div>
 
           <div class="actions">
@@ -131,6 +133,21 @@
           </div>
           <div class="log-body" id="logBody"></div>
         </div>
+      </section>
+
+      <!-- REPORT TAB -->
+      <section class="panel" id="panel-report">
+        <div class="card report-controls">
+          <div><h2>System Sales Summary</h2><p class="hint">Financial totals include submitted transactions only.</p></div>
+          <div class="report-date-fields">
+            <div class="field"><label for="reportStart">Start date</label><input id="reportStart" type="date" /></div>
+            <div class="field"><label for="reportEnd">End date</label><input id="reportEnd" type="date" /></div>
+            <button class="btn primary" id="btnGenerateReport">Generate</button>
+            <button class="btn secondary" id="btnExportReport" disabled><i class="bi bi-file-earmark-pdf"></i> Export PDF</button>
+          </div>
+          <span class="status-text" id="reportStatus">Choose a date range.</span>
+        </div>
+        <div class="card report-sheet" id="reportSheet"><div class="report-empty">Generate a report to view the sales summary.</div></div>
       </section>
 
       <!-- HOME TAB -->

@@ -1,8 +1,10 @@
-import { app, ipcMain, BrowserWindow } from "electron";
+import { app, dialog, ipcMain, BrowserWindow } from "electron";
+import * as fs from "fs/promises";
 import { autoUpdater } from "electron-updater";
 import { AppConfig, loadConfig, saveConfig, getConfigFilePath, hasConfigFile } from "./config";
 import * as db from "./db";
 import * as tsms from "./tsms";
+import * as XLSX from "xlsx";
 
 interface SubmitController {
   abort: boolean;
@@ -310,6 +312,26 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
     return db.getSummaryMetrics(cfg, filters);
   });
 
+  ipcMain.handle("report:get", async (_e, args: { start: string; end: string }) => {
+    const cfg = loadConfig();
+    if (!args.start || !args.end || args.start > args.end) throw new Error("Enter a valid date range.");
+    return db.getSalesReport(cfg, args.start, args.end);
+  });
+
+  ipcMain.handle("report:export-pdf", async (_e, args: { html: string; filename: string }) => {
+    const save = await dialog.showSaveDialog(getWindow(), { title: "Export System Sales Summary", defaultPath: args.filename || "system-sales-summary.pdf", filters: [{ name: "PDF document", extensions: ["pdf"] }] });
+    if (save.canceled || !save.filePath) return { canceled: true };
+    const reportWindow = new BrowserWindow({ show: false, webPreferences: { sandbox: true } });
+    try {
+      await reportWindow.loadURL(`data:text/html;charset=utf-8,${encodeURIComponent(args.html)}`);
+      const pdf = await reportWindow.webContents.printToPDF({ printBackground: true, pageSize: "A4" });
+      await fs.writeFile(save.filePath, pdf);
+      return { canceled: false, filePath: save.filePath };
+    } finally {
+      if (!reportWindow.isDestroyed()) reportWindow.close();
+    }
+  });
+
   ipcMain.handle(
     "db:records",
     async (_e, args: { filters: db.RecordFilters; page: number; pageSize: number }) => {
@@ -317,6 +339,24 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
       return db.fetchRecords(cfg, args.filters, args.page, args.pageSize);
     }
   );
+
+  ipcMain.handle("db:export-xlsx", async (_e, filters: db.RecordFilters) => {
+    const cfg = loadConfig();
+    const rows = await db.fetchAllRecords(cfg, filters || {});
+    const worksheet = XLSX.utils.json_to_sheet(rows);
+    worksheet["!cols"] = Object.keys(rows[0] || {}).map(() => ({ wch: 18 }));
+    const workbook = XLSX.utils.book_new();
+    XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
+    const datePart = filters?.date ? `-${filters.date}` : "";
+    const save = await dialog.showSaveDialog(getWindow(), {
+      title: "Export Transactions to Excel",
+      defaultPath: `transactions${datePart}.xlsx`,
+      filters: [{ name: "Excel workbook", extensions: ["xlsx"] }],
+    });
+    if (save.canceled || !save.filePath) return { canceled: true, count: rows.length };
+    XLSX.writeFile(workbook, save.filePath);
+    return { canceled: false, filePath: save.filePath, count: rows.length };
+  });
 
   ipcMain.handle("db:record", async (_e, guestCheckId: string) => {
     const cfg = loadConfig();

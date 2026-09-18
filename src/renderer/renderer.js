@@ -43,6 +43,77 @@ const fmt = (n) => {
 };
 
 const pad = (n) => String(n).padStart(2, "0");
+const reportState = { data: null };
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[char]));
+}
+
+function reportMoney(value, negative = false) {
+  const text = fmt(value);
+  return negative && Number(value) ? `(${text})` : text;
+}
+
+function renderReport(report) {
+  const m = report.metrics;
+  const moneyRow = (label, value, negative = false, key = "") => `<div class="report-row ${key}"><span>${label}</span><strong>${reportMoney(value, negative)}</strong></div>`;
+  const orderRows = report.orderTypes.length
+    ? report.orderTypes.map((row) => `<tr><td><strong>${escapeHtml(row.orderType)}</strong><div class="report-adjustment">Voids: ${reportMoney(row.voids)}<br />GC Excess: ${reportMoney(row.gcExcess)}</div></td><td>${fmt(row.netSales)}</td><td></td></tr>`).join("")
+    : `<tr><td colspan="3">No submitted transactions</td></tr>`;
+  const salesRows = report.salesTypes.map((row) => `<tr><td>${escapeHtml(row.salesType)}</td><td>${fmt(row.netSales)}</td></tr>`).join("");
+  const orderTotal = report.orderTypes.reduce((sum, row) => sum + row.netSales, 0);
+  const salesTotal = report.salesTypes.reduce((sum, row) => sum + row.netSales, 0);
+  const displayDate = (value) => {
+    const [year, month, day] = value.split("-");
+    return `${month}/${day}/${year}`;
+  };
+  const dateLabel = report.startDate === report.endDate ? displayDate(report.startDate) : `${displayDate(report.startDate)} - ${displayDate(report.endDate)}`;
+  $("reportSheet").innerHTML = `
+    <div class="report-header"><div><div class="report-kicker">Report Title</div><h2>System Sales Summary</h2></div><div class="report-meta"><div><span>Business Dates</span><strong>${dateLabel}</strong></div><div><span>Locations</span><strong>${escapeHtml(report.location)}</strong></div></div></div>
+    <div class="report-status-strip"><span>Submitted: <strong>${report.statuses.submitted}</strong></span><span class="report-status-pending">Pending: <strong>${report.statuses.pending}</strong></span><span class="report-status-failed">Failed: <strong>${report.statuses.failed}</strong></span></div>
+    <div class="report-columns"><section><h3>Sales Metrics &amp; Summary</h3>${moneyRow("Net Sales", m.netSales)}${moneyRow("Tax Collected", m.taxCollected)}${moneyRow("Total Revenue", m.totalRevenue, false, "report-total")}${moneyRow("Service Charge", m.serviceCharge)}${moneyRow("Less: VAT", m.lessVat, true)}${moneyRow("Less: PWD Disc", m.lessPwd, true)}${moneyRow("Less: Sr Citizen Disc", m.lessSenior, true)}${moneyRow("Employee Discount", m.employeeDiscount)}${moneyRow("National Athlete", m.nationalAthlete)}${moneyRow("Solo Parent", m.soloParent)}${moneyRow("Other Discount", m.otherDiscount)}${moneyRow("Total Discounts", m.discountTotal, true, "report-total")}</section>
+      <section><h3>Order Type Breakdown</h3><table class="report-table"><thead><tr><th>Order Type</th><th>Net Sales</th><th>Adjustments</th></tr></thead><tbody>${orderRows}<tr class="report-total"><td>Totals</td><td>${fmt(orderTotal)}</td><td></td></tr></tbody></table><h3 class="report-subsection">Sales Type Breakdown</h3><table class="report-table"><thead><tr><th>Sales Type</th><th>Net Sales</th></tr></thead><tbody>${salesRows}<tr class="report-total"><td>Totals</td><td>${fmt(salesTotal)}</td></tr></tbody></table></section></div>`;
+  reportState.data = report;
+  $("btnExportReport").disabled = false;
+}
+
+function buildReportPrintHtml() {
+  return `<!doctype html><html><head><meta charset="utf-8"><title>System Sales Summary</title><style>*{box-sizing:border-box}body{font-family:Arial,sans-serif;color:#172033;padding:28px;font-size:12px}h2{margin:2px 0 0;font-size:22px}h3{font-size:13px;border-bottom:2px solid #172033;padding-bottom:7px;margin:0 0 10px}.report-header{display:flex;justify-content:space-between;border-bottom:1px solid #cbd5e1;padding-bottom:16px}.report-kicker,.report-meta span{color:#64748b;font-size:10px;text-transform:uppercase;letter-spacing:.08em}.report-meta{text-align:right}.report-meta div{margin-bottom:5px}.report-meta strong{display:block}.report-status-strip{display:flex;gap:24px;background:#f1f5f9;padding:9px 12px;margin:16px 0}.report-status-pending{color:#9a6700}.report-status-failed{color:#b42318}.report-columns{display:grid;grid-template-columns:1fr 1.35fr;gap:28px}.report-row{display:flex;justify-content:space-between;padding:7px 0;border-bottom:1px solid #e2e8f0}.report-row strong{font-variant-numeric:tabular-nums}.report-total{font-weight:700;border-top:2px solid #172033;border-bottom:2px solid #172033}.report-table{width:100%;border-collapse:collapse}.report-table th,.report-table td{text-align:left;padding:7px;border-bottom:1px solid #e2e8f0}.report-table th:nth-child(n+2),.report-table td:nth-child(n+2){text-align:right}.report-adjustment{color:#64748b;font-size:10px;line-height:1.5;margin-top:3px}.report-subsection{margin-top:24px}</style></head><body>${$("reportSheet").innerHTML}</body></html>`;
+}
+
+$("btnGenerateReport").addEventListener("click", async () => {
+  const start = $("reportStart").value;
+  const end = $("reportEnd").value;
+  if (!start || !end || start > end) {
+    $("reportStatus").textContent = "Enter a valid start and end date.";
+    return;
+  }
+  $("btnGenerateReport").disabled = true;
+  $("btnExportReport").disabled = true;
+  $("reportStatus").textContent = "Generating report...";
+  try {
+    renderReport(await window.pos.getSalesReport(start, end));
+    $("reportStatus").textContent = "Report generated from submitted transactions.";
+  } catch (error) {
+    reportState.data = null;
+    $("reportSheet").innerHTML = `<div class="report-empty">Unable to generate report: ${escapeHtml(error.message)}</div>`;
+    $("reportStatus").textContent = "Report generation failed.";
+  } finally {
+    $("btnGenerateReport").disabled = false;
+  }
+});
+
+$("btnExportReport").addEventListener("click", async () => {
+  if (!reportState.data) return;
+  $("reportStatus").textContent = "Preparing PDF...";
+  const date = reportState.data.startDate === reportState.data.endDate ? reportState.data.startDate : `${reportState.data.startDate}-to-${reportState.data.endDate}`;
+  try {
+    const result = await window.pos.exportReportPdf(buildReportPrintHtml(), `system-sales-summary-${date}.pdf`);
+    $("reportStatus").textContent = result.canceled ? "PDF export canceled." : `PDF exported: ${result.filePath}`;
+  } catch (error) {
+    $("reportStatus").textContent = `PDF export failed: ${error.message}`;
+  }
+});
 
 // Formats a DATETIME2 value (string from tedious, or a Date) as a readable
 // "YYYY-MM-DD HH:MM:SS", preserving the stored wall-clock time.
@@ -350,6 +421,24 @@ $("btnApply").addEventListener("click", () => {
   };
   state.page = 1;
   refreshAll();
+});
+$("btnExportTransactions").addEventListener("click", async () => {
+  const button = $("btnExportTransactions");
+  const exportFilters = {
+    guestCheckId: $("fGuest").value.trim(),
+    date: $("fDate").value,
+    status: $("fStatus").value,
+  };
+  button.disabled = true;
+  setStatus("Preparing Excel export...");
+  try {
+    const result = await window.pos.exportTransactions(exportFilters);
+    setStatus(result.canceled ? "Excel export canceled." : `Exported ${result.count} transaction(s) to Excel`);
+  } catch (error) {
+    setStatus(`Excel export failed: ${error.message}`);
+  } finally {
+    button.disabled = false;
+  }
 });
 $("btnReset").addEventListener("click", () => {
   $("fGuest").value = "";
@@ -1103,6 +1192,8 @@ async function boot() {
   const today = new Date().toISOString().slice(0, 10);
   $("rangeStart").value = today;
   $("rangeEnd").value = today;
+  $("reportStart").value = today;
+  $("reportEnd").value = today;
 
   const tbody = $("recordsTable")?.querySelector("tbody");
   if (tbody) tbody.innerHTML = "";

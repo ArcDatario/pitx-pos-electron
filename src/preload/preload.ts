@@ -10,8 +10,11 @@ contextBridge.exposeInMainWorld("pos", {
   transfer: (start: string, end: string) => ipcRenderer.invoke("db:transfer", { start, end }),
   getStatusCounts: (filters: unknown) => ipcRenderer.invoke("db:status-counts", filters),
   getSummary: (filters: unknown) => ipcRenderer.invoke("db:summary", filters),
+  getSalesReport: (start: string, end: string) => ipcRenderer.invoke("report:get", { start, end }),
+  exportReportPdf: (html: string, filename: string) => ipcRenderer.invoke("report:export-pdf", { html, filename }),
   getRecords: (filters: unknown, page: number, pageSize: number) =>
     ipcRenderer.invoke("db:records", { filters, page, pageSize }),
+  exportTransactions: (filters: unknown) => ipcRenderer.invoke("db:export-xlsx", filters),
   getRecord: (guestCheckId: string) => ipcRenderer.invoke("db:record", guestCheckId),
 
   installCreateTable: () => ipcRenderer.invoke("install:create-table"),

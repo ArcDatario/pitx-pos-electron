@@ -517,6 +517,21 @@ export async function fetchRecords(
   return { rows: res.recordset, total };
 }
 
+export async function fetchAllRecords(
+  cfg: AppConfig,
+  filters: RecordFilters
+): Promise<any[]> {
+  const p = await getPool(cfg);
+  const req = p.request();
+  const where = buildWhereClause(req, filters);
+  const res = await req.query(`
+    SELECT * FROM dbo.dts_pitx_payload
+    ${where}
+    ORDER BY businessdate DESC, transdatetime DESC
+  `);
+  return res.recordset;
+}
+
 /**
  * Rows eligible for (re)submission in [startDate, endDate] -- 1:1 port of
  * tsms_common.py::fetch_pending_by_date()'s eligibility rule, extended
@@ -843,4 +858,60 @@ export async function installCreateTable(cfg: AppConfig): Promise<void> {
         WHERE receipt_no IS NOT NULL;
     END
   `);
+}
+
+export interface SalesReport {
+  startDate: string;
+  endDate: string;
+  location: string;
+  metrics: Record<string, number>;
+  statuses: { submitted: number; pending: number; failed: number };
+  orderTypes: Array<{ orderType: string; netSales: number; voids: number; gcExcess: number }>;
+  salesTypes: Array<{ salesType: string; netSales: number }>;
+}
+
+export async function getSalesReport(cfg: AppConfig, startDate: string, endDate: string): Promise<SalesReport> {
+  const p = await getPool(cfg);
+  const locationClause = cfg.filters.locationname ? " AND locationname = @location" : "";
+  const submitted = `businessdate BETWEEN @start AND @end AND LOWER(status) = 'submitted'${locationClause}`;
+  const range = `businessdate BETWEEN @start AND @end${locationClause}`;
+  const base = () => {
+    const request = p.request().input("start", sql.Date, startDate).input("end", sql.Date, endDate);
+    if (cfg.filters.locationname) request.input("location", sql.VarChar, cfg.filters.locationname);
+    return request;
+  };
+  const metrics = (await base().query(`
+    SELECT ISNULL(SUM(netsales), 0) AS netSales, ISNULL(SUM(vat_12), 0) AS taxCollected,
+      ISNULL(SUM(netsales) + SUM(vat_12), 0) AS totalRevenue, ISNULL(SUM(gc_sales), 0) AS serviceCharge,
+      ISNULL(SUM(lessvat), 0) AS lessVat, ISNULL(SUM(lessPWD), 0) AS lessPwd,
+      ISNULL(SUM(lessSC), 0) AS lessSenior, ISNULL(SUM(lessEMP), 0) AS employeeDiscount,
+      ISNULL(SUM(lessNtnlAth), 0) AS nationalAthlete, ISNULL(SUM(lessSoloparent), 0) AS soloParent,
+      ISNULL(SUM(otherdiscount), 0) AS otherDiscount
+    FROM dbo.dts_pitx_payload WHERE ${submitted}
+  `)).recordset[0];
+  const statusRows = (await base().query(`SELECT LOWER(status) AS status, COUNT(*) AS count FROM dbo.dts_pitx_payload WHERE ${range} GROUP BY LOWER(status)`)).recordset;
+  const statuses = { submitted: 0, pending: 0, failed: 0 };
+  for (const row of statusRows) if (row.status in statuses) statuses[row.status as keyof typeof statuses] = Number(row.count) || 0;
+  const orderTypes = (await base().query(`
+    SELECT CASE WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%pwd%' THEN 'PWD'
+      WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%senior%' OR LOWER(ISNULL(ordertypename, '')) LIKE '%citizen%' THEN 'Senior Citizen'
+      ELSE ISNULL(ordertypename, 'Standard') END AS orderType,
+      ISNULL(SUM(netsales), 0) AS netSales, ISNULL(SUM(voidtotal_amt), 0) AS voids, ISNULL(SUM(gc_excess), 0) AS gcExcess
+    FROM dbo.dts_pitx_payload WHERE ${submitted}
+    GROUP BY CASE WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%pwd%' THEN 'PWD'
+      WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%senior%' OR LOWER(ISNULL(ordertypename, '')) LIKE '%citizen%' THEN 'Senior Citizen'
+      ELSE ISNULL(ordertypename, 'Standard') END ORDER BY orderType
+  `)).recordset;
+  const salesTypes = (await base().query(`SELECT ISNULL(SUM(vatable_sales), 0) AS vatable, ISNULL(SUM(sc_vat_excempt_sales), 0) AS vatExempt FROM dbo.dts_pitx_payload WHERE ${submitted}`)).recordset[0];
+  const discountTotal = ["lessVat", "lessPwd", "lessSenior", "employeeDiscount", "nationalAthlete", "soloParent", "otherDiscount"]
+    .reduce((total, key) => total + (Number(metrics[key]) || 0), 0);
+  return {
+    startDate, endDate, location: cfg.filters.locationname || "All locations", metrics: { ...metrics, discountTotal }, statuses,
+    orderTypes: orderTypes.map((row) => ({ orderType: String(row.orderType), netSales: Number(row.netSales) || 0, voids: Number(row.voids) || 0, gcExcess: Number(row.gcExcess) || 0 })),
+    salesTypes: [
+      { salesType: "Vatable", netSales: Number(salesTypes.vatable) || 0 },
+      { salesType: "VAT exempt", netSales: Number(salesTypes.vatExempt) || 0 },
+      { salesType: "Zero Rated", netSales: 0 },
+    ],
+  };
 }
