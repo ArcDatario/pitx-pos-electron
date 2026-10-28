@@ -866,6 +866,7 @@ export interface SalesReport {
   location: string;
   metrics: Record<string, number>;
   statuses: { total: number; submitted: number; voided: number; pending: number; failed: number };
+  promo: { withApproval: number; withoutApproval: number };
   orderTypes: Array<{ orderType: string; netSales: number; voids: number; gcExcess: number }>;
   salesTypes: Array<{ salesType: string; netSales: number }>;
 }
@@ -908,6 +909,10 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
     .reduce((total, key) => total + (Number(metrics[key]) || 0), 0);
   return {
     startDate, endDate, location: cfg.filters.locationname || "All locations", metrics: { ...metrics, discountTotal }, statuses,
+    promo: {
+      withApproval: (Number(metrics.nationalAthlete) || 0) + (Number(metrics.soloParent) || 0),
+      withoutApproval: 0,
+    },
     orderTypes: orderTypes.map((row) => ({ orderType: String(row.orderType), netSales: Number(row.netSales) || 0, voids: Number(row.voids) || 0, gcExcess: Number(row.gcExcess) || 0 })),
     salesTypes: [
       { salesType: "Vatable", netSales: Number(salesTypes.vatable) || 0 },
