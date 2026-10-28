@@ -271,7 +271,9 @@ input:focus, select:focus { border-color: var(--primary); }
 .report-header h2 { margin: 3px 0 0; font-size: 22px; }
 .report-meta { text-align: right; display: flex; gap: 22px; }
 .report-meta strong { display: block; margin-top: 4px; }
-.report-status-strip { display: flex; gap: 24px; margin: 15px 0; padding: 9px 12px; background: var(--bg-elev); border: 1px solid var(--card-border); }
+.report-status-strip { display: flex; flex-wrap: wrap; gap: 12px 24px; margin: 15px 0; padding: 9px 12px; background: var(--bg-elev); border: 1px solid var(--card-border); }
+.report-status-total { font-weight: 700; }
+.report-status-voided { color: var(--danger); }
 .report-status-pending { color: var(--warning); }.report-status-failed { color: var(--danger); }
 .report-columns { display: grid; grid-template-columns: 1fr 1.35fr; gap: 28px; }
 .report-columns h3 { margin: 0 0 8px; padding-bottom: 7px; border-bottom: 2px solid var(--text); font-size: 12px; text-transform: uppercase; letter-spacing: .05em; }

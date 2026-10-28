@@ -865,7 +865,7 @@ export interface SalesReport {
   endDate: string;
   location: string;
   metrics: Record<string, number>;
-  statuses: { submitted: number; pending: number; failed: number };
+  statuses: { total: number; submitted: number; voided: number; pending: number; failed: number };
   orderTypes: Array<{ orderType: string; netSales: number; voids: number; gcExcess: number }>;
   salesTypes: Array<{ salesType: string; netSales: number }>;
 }
@@ -890,8 +890,9 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
     FROM dbo.dts_pitx_payload WHERE ${submitted}
   `)).recordset[0];
   const statusRows = (await base().query(`SELECT LOWER(status) AS status, COUNT(*) AS count FROM dbo.dts_pitx_payload WHERE ${range} GROUP BY LOWER(status)`)).recordset;
-  const statuses = { submitted: 0, pending: 0, failed: 0 };
+  const statuses = { total: 0, submitted: 0, voided: 0, pending: 0, failed: 0 };
   for (const row of statusRows) if (row.status in statuses) statuses[row.status as keyof typeof statuses] = Number(row.count) || 0;
+  statuses.total = statuses.submitted + statuses.voided + statuses.failed;
   const orderTypes = (await base().query(`
     SELECT CASE WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%pwd%' THEN 'PWD'
       WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%senior%' OR LOWER(ISNULL(ordertypename, '')) LIKE '%citizen%' THEN 'Senior Citizen'
