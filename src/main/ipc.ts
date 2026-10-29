@@ -275,7 +275,7 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
 
   ipcMain.handle("app:update-install", () => {
     if (!app.isPackaged) return { ok: false, message: "Updates are available in the installed app." };
-    autoUpdater.quitAndInstall();
+    autoUpdater.quitAndInstall(true, true);
     return { ok: true };
   });
 
