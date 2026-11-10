@@ -462,7 +462,7 @@ export async function getSummaryMetrics(
       ISNULL(SUM(lessSoloparent), 0) AS lessSoloParent,
       ISNULL(SUM(lessEMP), 0) AS lessEMP,
       ISNULL(SUM(gc_excess), 0) AS gc_excess,
-      ISNULL(SUM(voidtotal_amt), 0) AS void_amt,
+      ISNULL(SUM(CASE WHEN LOWER(status) <> 'voided' THEN voidtotal_amt ELSE 0 END), 0) AS void_amt,
       ISNULL(SUM(netsales) + SUM(vat_12), 0) AS total_revenue
     FROM dbo.dts_pitx_payload
     ${where}

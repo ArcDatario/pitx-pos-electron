@@ -75,11 +75,7 @@ export function tsmsGenerateUuidV4(): string {
 }
 
 export function tsmsIsoTimestampNow(): string {
-  const now = new Date(Date.now() + 8 * 60 * 60 * 1000);
-  const pad = (value: number, length = 2) => String(value).padStart(length, "0");
-  return `${now.getUTCFullYear()}-${pad(now.getUTCMonth() + 1)}-${pad(now.getUTCDate())}`
-    + `T${pad(now.getUTCHours())}:${pad(now.getUTCMinutes())}:${pad(now.getUTCSeconds())}`
-    + `.${pad(now.getUTCMilliseconds(), 3)}Z`;
+  return new Date().toISOString();
 }
 
 /** Converts a JS Date/string/null into an ISO-8601 string with millisecond
@@ -88,9 +84,27 @@ export function tsmsIsoTimestampNow(): string {
  * stable across every rebuild of the same transaction. */
 function formatIso(value: Date | string | null | undefined): string {
   if (value === null || value === undefined) return tsmsIsoTimestampNow();
-  const d = value instanceof Date ? value : new Date(value);
+  // POS SQL datetime values are Philippine wall time without timezone data;
+  // mssql exposes them as Date objects whose UTC components hold those fields.
+  // Preserve the database clock components, then subtract UTC+8 before adding Z.
+  // If a caller supplies an explicit-zone string, it already identifies an instant.
+  if (typeof value === "string" && /(?:Z|[+-]\d{2}:?\d{2})$/i.test(value)) {
+    const zoned = new Date(value);
+    return isNaN(zoned.getTime()) ? tsmsIsoTimestampNow() : zoned.toISOString();
+  }
+  const isDatabaseDate = value instanceof Date;
+  const d = isDatabaseDate ? value : new Date(value);
   if (isNaN(d.getTime())) return tsmsIsoTimestampNow();
-  return d.toISOString().replace(/Z$/, "").slice(0, 23) + "Z";
+  const utcMillis = Date.UTC(
+    isDatabaseDate ? d.getUTCFullYear() : d.getFullYear(),
+    isDatabaseDate ? d.getUTCMonth() : d.getMonth(),
+    isDatabaseDate ? d.getUTCDate() : d.getDate(),
+    isDatabaseDate ? d.getUTCHours() : d.getHours(),
+    isDatabaseDate ? d.getUTCMinutes() : d.getMinutes(),
+    isDatabaseDate ? d.getUTCSeconds() : d.getSeconds(),
+    isDatabaseDate ? d.getUTCMilliseconds() : d.getMilliseconds(),
+  ) - 8 * 60 * 60 * 1000;
+  return new Date(utcMillis).toISOString();
 }
 
 /** Recursively sorts object keys so the checksum is stable regardless of

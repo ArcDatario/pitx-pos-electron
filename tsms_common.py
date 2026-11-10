@@ -641,9 +641,14 @@ def _format_iso(value):
     if value is None:
         return tsms_iso_timestamp_now()
     if isinstance(value, str):
-        return value
+        value = datetime.datetime.fromisoformat(value.replace("Z", "+00:00"))
     if isinstance(value, datetime.date) and not isinstance(value, datetime.datetime):
         value = datetime.datetime.combine(value, datetime.time.min)
+    # POS database timestamps are naive Philippine local time (UTC+8).
+    # Convert to UTC before marking the serialized value with Z.
+    if value.tzinfo is None:
+        value = value.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=8)))
+    value = value.astimezone(datetime.timezone.utc)
     ms = int(getattr(value, "microsecond", 0) / 1000)
     return value.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
 

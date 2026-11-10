@@ -7,3 +7,5 @@ backup
 release-fixed-new/
 release-fixed/
 syntax.txt
+/logs
+/release-build-*/
