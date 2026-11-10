@@ -235,10 +235,10 @@ $("btnDismissUpdate").addEventListener("click", () => updateBanner.classList.add
 
 window.pos.onUpdateEvent((event) => {
   if (event.type === "available") {
-    showUpdateBanner(`Version ${event.version} is available.`);
-    downloadUpdateButton.classList.remove("hidden");
-    settingsDownloadUpdateButton.classList.remove("hidden");
-    settingsUpdateStatus.textContent = `Version ${event.version} is available.`;
+    showUpdateBanner(`Version ${event.version} is available. Downloading in the background...`);
+    downloadUpdateButton.classList.add("hidden");
+    settingsDownloadUpdateButton.classList.add("hidden");
+    settingsUpdateStatus.textContent = `Version ${event.version} is downloading in the background...`;
   } else if (event.type === "checking") {
     settingsUpdateStatus.textContent = "Checking for updates...";
   } else if (event.type === "not-available") {

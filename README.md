@@ -84,8 +84,16 @@ files. Output lands in `release-fixed/`.
 ## Automatic updates
 
 The installed app checks the GitHub Releases feed for `ArcDatario/pitx-pos-electron`.
-When a newer release is found, the app shows a download button; after the download
-finishes it shows a restart button to install the update.
+When a newer release is found, the app downloads it in the background. After the
+download finishes, the app prompts for a restart; the update is also installed
+when the app is fully exited. Closing the window only minimizes the app to the
+system tray, so use the update prompt or choose **Quit** from the tray to install.
+If automation is running with the window hidden, a system notification appears
+when the update is ready.
+
+The first release with automatic downloading must be installed once on existing
+devices (using that device's current update prompt or the installer below). Later
+releases will download automatically.
 
 To publish an update:
 

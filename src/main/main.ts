@@ -1,4 +1,4 @@
-import { app, BrowserWindow, Menu, Tray, nativeImage, MenuItemConstructorOptions } from "electron";
+import { app, BrowserWindow, Menu, Tray, nativeImage, Notification, MenuItemConstructorOptions } from "electron";
 import * as path from "path";
 import * as fs from "fs";
 import { initLogger } from "./logger";
@@ -15,7 +15,7 @@ function getAppIconPath() {
   return path.join(app.getAppPath(), "build", "logo.ico");
 }
 
-autoUpdater.autoDownload = false;
+autoUpdater.autoDownload = true;
 autoUpdater.autoInstallOnAppQuit = true;
 
 process.on("uncaughtException", (err) => {
@@ -235,6 +235,23 @@ function configureAutoUpdater() {
   });
   autoUpdater.on("update-downloaded", (info) => {
     sendUpdateEvent("downloaded", { version: info.version });
+    if (!mainWindow || mainWindow.isDestroyed() || !mainWindow.isVisible()) {
+      if (Notification.isSupported()) {
+        const notification = new Notification({
+          title: "PITX POS Transfer update ready",
+          body: `Version ${info.version} is downloaded. Open the app to restart and install it.`,
+        });
+        notification.on("click", () => {
+          if (!mainWindow || mainWindow.isDestroyed()) {
+            createWindow();
+          } else {
+            mainWindow.show();
+            mainWindow.focus();
+          }
+        });
+        notification.show();
+      }
+    }
   });
   autoUpdater.on("error", (error) => {
     console.error("[main] update failed:", error);
