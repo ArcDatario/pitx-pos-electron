@@ -343,8 +343,16 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   ipcMain.handle("db:export-xlsx", async (_e, filters: db.RecordFilters) => {
     const cfg = loadConfig();
     const rows = await db.fetchAllRecords(cfg, filters || {});
-    const worksheet = XLSX.utils.json_to_sheet(rows);
-    worksheet["!cols"] = Object.keys(rows[0] || {}).map(() => ({ wch: 18 }));
+    const headers = [
+      ...new Set([
+        ...Object.keys(rows[0] || {}),
+        "last_payload_sent",
+        "last_response_body",
+        "last_response_code",
+      ]),
+    ];
+    const worksheet = XLSX.utils.json_to_sheet(rows, { header: headers });
+    worksheet["!cols"] = headers.map(() => ({ wch: 18 }));
     const workbook = XLSX.utils.book_new();
     XLSX.utils.book_append_sheet(workbook, worksheet, "Transactions");
     const datePart = filters?.date ? `-${filters.date}` : "";
