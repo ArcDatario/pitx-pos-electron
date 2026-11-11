@@ -75,10 +75,10 @@ export function tsmsGenerateUuidV4(): string {
 }
 
 export function tsmsIsoTimestampNow(): string {
-  return new Date().toISOString();
+  return new Date().toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
-/** Converts a JS Date/string/null into an ISO-8601 string with millisecond
+/** Converts a JS Date/string/null into a UTC ISO-8601 string with second
  * precision. Falls back to "now" only if nothing usable was given -- in
  * normal operation this always comes from transdatetime, so it stays
  * stable across every rebuild of the same transaction. */
@@ -104,7 +104,7 @@ function formatIso(value: Date | string | null | undefined): string {
     isDatabaseDate ? d.getUTCSeconds() : d.getSeconds(),
     isDatabaseDate ? d.getUTCMilliseconds() : d.getMilliseconds(),
   ) - 8 * 60 * 60 * 1000;
-  return new Date(utcMillis).toISOString();
+  return new Date(utcMillis).toISOString().replace(/\.\d{3}Z$/, "Z");
 }
 
 /** Recursively sorts object keys so the checksum is stable regardless of
@@ -165,8 +165,6 @@ export function upperCaseKeys(rec: Record<string, any>): Record<string, any> {
  */
 export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, transactionId: string) {
   const tcfg = cfg.tsms;
-  const grossSales = Number(agg.GROSS_SALES ?? 0);
-  const netSales = Number(agg.NETSALES ?? 0);
   const vatAmount = Number(agg.VAT ?? 0);
   const lessPwd = Number(agg.LESSPWD ?? 0);
   const lessSc = Number(agg.LESSSC ?? 0);
@@ -178,7 +176,10 @@ export function buildTransaction(cfg: AppConfig, agg: Record<string, any>, trans
   const vatableSales = Number(agg.VATABLE_SALES ?? 0);
   const gcExcess = Number(agg.GC_EXCESS ?? 0);
   const otherTax = Number(agg.OTHER_TAX ?? 0);
+  const netSales = vatableSales + lessVat + vatAmount;
   const promoDiscountTotal = lessNational + lessSolo;
+  const grossSales =
+    netSales + promoDiscountTotal + lessSc + lessPwd + serviceCharge + gcExcess + lessEmp + otherTax;
   const promoStatus = promoDiscountTotal > 0 ? "WITH_APPROVAL" : "NONE";
 
   const txn: Record<string, any> = {

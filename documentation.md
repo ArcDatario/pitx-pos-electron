@@ -275,7 +275,7 @@ The submission engine defines helpers such as:
 
 - `tsmsAmount()` → formats numeric values as `0.00` strings
 - `tsmsGenerateUuidV4()` → `crypto.randomUUID()`
-- `tsmsIsoTimestampNow()` → timestamp in UTC with millisecond precision
+- `tsmsIsoTimestampNow()` → timestamp in UTC with second precision (`YYYY-MM-DDTHH:MM:SSZ`)
 - `tsmsChecksum()` → SHA-256 checksum over a sorted JSON payload
 - `upperCaseKeys()` → uppercase record keys for compatibility with downstream logic
 
@@ -293,6 +293,9 @@ The submission engine defines helpers such as:
 - payload checksum
 - 7 adjustment entries
 - 4 tax entries
+
+`net_sales` is the sum of `VATABLE_SALES`, `SC_VAT_EXEMPT_SALES`, and `VAT`.
+`gross_sales` is `net_sales` plus the adjustment amounts and `OTHER_TAX`.
 
 `buildSubmission()` wraps the transaction inside the submission envelope with:
 

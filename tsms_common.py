@@ -628,9 +628,8 @@ def tsms_generate_uuid_v4():
 
 
 def tsms_iso_timestamp_now():
-    now = datetime.datetime.utcnow()
-    ms = int(now.microsecond / 1000)
-    return now.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
+    now = datetime.datetime.now(datetime.timezone.utc)
+    return now.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def _format_iso(value):
@@ -649,8 +648,7 @@ def _format_iso(value):
     if value.tzinfo is None:
         value = value.replace(tzinfo=datetime.timezone(datetime.timedelta(hours=8)))
     value = value.astimezone(datetime.timezone.utc)
-    ms = int(getattr(value, "microsecond", 0) / 1000)
-    return value.strftime("%Y-%m-%dT%H:%M:%S.") + f"{ms:03d}Z"
+    return value.strftime("%Y-%m-%dT%H:%M:%SZ")
 
 
 def tsms_sort_keys_recursive(data):
@@ -676,8 +674,6 @@ def build_transaction(cfg, agg, transaction_id):
     }
     receipt_no is taken directly from the database record."""
     tcfg = cfg["tsms"]
-    gross_sales = float(agg.get("GROSS_SALES", 0) or 0)
-    net_sales = float(agg.get("NETSALES", 0) or 0)
     vat_amount = float(agg.get("VAT", 0) or 0)
     less_pwd = float(agg.get("LESSPWD", 0) or 0)
     less_sc = float(agg.get("LESSSC", 0) or 0)
@@ -689,7 +685,12 @@ def build_transaction(cfg, agg, transaction_id):
     vatable_sales = float(agg.get("VATABLE_SALES", 0) or 0)
     gc_excess = float(agg.get("GC_EXCESS", 0) or 0)
     other_tax = float(agg.get("OTHER_TAX", 0) or 0)
+    net_sales = vatable_sales + less_vat + vat_amount
     promo_discount_total = less_national + less_solo
+    gross_sales = (
+        net_sales + promo_discount_total + less_sc + less_pwd
+        + service_charge + gc_excess + less_emp + other_tax
+    )
     promo_status = "WITH_APPROVAL" if promo_discount_total > 0 else "NONE"
 
     txn = {
