@@ -883,14 +883,9 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
   };
   const metrics = (await base().query(`
     SELECT
-      ISNULL(SUM(ISNULL(vatable_sales, 0) + ISNULL(sc_vat_excempt_sales, 0) + ISNULL(vat, 0)), 0) AS netSales,
+      ISNULL(SUM(netsales), 0) AS netSales,
       ISNULL(SUM(vat), 0) AS taxCollected,
-      ISNULL(SUM(
-        ISNULL(vatable_sales, 0) + ISNULL(sc_vat_excempt_sales, 0) + ISNULL(vat, 0) +
-        ISNULL(lessNtnlAth, 0) + ISNULL(lessSoloparent, 0) + ISNULL(lessSC, 0) +
-        ISNULL(lessPWD, 0) + ISNULL(gc_sales, 0) + ISNULL(gc_excess, 0) +
-        ISNULL(lessEMP, 0) + ISNULL(other_tax, 0)
-      ), 0) AS grossSales,
+      ISNULL(SUM(netsales) + SUM(vat), 0) AS totalRevenue,
       ISNULL(SUM(gc_sales), 0) AS serviceCharge,
       ISNULL(SUM(lessvat), 0) AS lessVat, ISNULL(SUM(lessPWD), 0) AS lessPwd,
       ISNULL(SUM(lessSC), 0) AS lessSenior, ISNULL(SUM(lessEMP), 0) AS employeeDiscount,
@@ -906,7 +901,7 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
     SELECT CASE WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%pwd%' THEN 'PWD'
       WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%senior%' OR LOWER(ISNULL(ordertypename, '')) LIKE '%citizen%' THEN 'Senior Citizen'
       ELSE ISNULL(ordertypename, 'Standard') END AS orderType,
-      ISNULL(SUM(ISNULL(vatable_sales, 0) + ISNULL(sc_vat_excempt_sales, 0) + ISNULL(vat, 0)), 0) AS netSales,
+      ISNULL(SUM(netsales), 0) AS netSales,
       ISNULL(SUM(voidtotal_amt), 0) AS voids, ISNULL(SUM(gc_excess), 0) AS gcExcess
     FROM dbo.dts_pitx_payload WHERE ${submitted}
     GROUP BY CASE WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%pwd%' THEN 'PWD'
@@ -915,7 +910,7 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
   `)).recordset;
   const salesTypes = (await base().query(`
     SELECT
-      ISNULL(SUM(ISNULL(vatable_sales, 0) + ISNULL(vat, 0)), 0) AS vatable,
+      ISNULL(SUM(vatable_sales), 0) AS vatable,
       ISNULL(SUM(sc_vat_excempt_sales), 0) AS vatExempt
     FROM dbo.dts_pitx_payload WHERE ${submitted}
   `)).recordset[0];
@@ -929,7 +924,7 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
     },
     orderTypes: orderTypes.map((row) => ({ orderType: String(row.orderType), netSales: Number(row.netSales) || 0, voids: Number(row.voids) || 0, gcExcess: Number(row.gcExcess) || 0 })),
     salesTypes: [
-      { salesType: "Vatable (incl. VAT)", netSales: Number(salesTypes.vatable) || 0 },
+      { salesType: "Vatable", netSales: Number(salesTypes.vatable) || 0 },
       { salesType: "VAT exempt", netSales: Number(salesTypes.vatExempt) || 0 },
       { salesType: "Zero Rated", netSales: 0 },
     ],
