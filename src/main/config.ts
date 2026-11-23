@@ -31,15 +31,24 @@ export interface WorkerConfig {
   max_retries: number;
 }
 
+export interface DataSyncConfig {
+  enabled: boolean;
+  interval_seconds: number;
+  sqlserver: SqlServerConfig;
+}
+
 export interface AppConfig {
   sqlserver: SqlServerConfig;
+  active_connection: "local" | "central";
   filters: FiltersConfig;
   tsms: TsmsConfig;
   worker: WorkerConfig;
+  dataSync: DataSyncConfig;
   automation_enabled?: boolean;
 }
 
 export const DEFAULT_CONFIG: AppConfig = {
+  active_connection: "local",
   sqlserver: {
     server: "POS1\\SQLEXPRESS",
     database: "CheckPostingDB",
@@ -64,6 +73,17 @@ export const DEFAULT_CONFIG: AppConfig = {
     poll_interval_seconds: 10,
     batch_size: 100,
     max_retries: 5,
+  },
+  dataSync: {
+    enabled: false,
+    interval_seconds: 60,
+    sqlserver: {
+      server: "",
+      database: "OracleDB",
+      username: "",
+      password: "",
+      driver: "ODBC Driver 17 for SQL Server",
+    },
   },
   automation_enabled: false,
 };
@@ -107,8 +127,19 @@ export function loadConfig(): AppConfig {
     return seed;
   }
 
-  const raw = fs.readFileSync(configPath, "utf-8");
-  return JSON.parse(raw) as AppConfig;
+  const raw = JSON.parse(fs.readFileSync(configPath, "utf-8")) as Partial<AppConfig>;
+  return {
+    ...DEFAULT_CONFIG,
+    ...raw,
+    dataSync: {
+      ...DEFAULT_CONFIG.dataSync,
+      ...raw.dataSync,
+      sqlserver: {
+        ...DEFAULT_CONFIG.dataSync.sqlserver,
+        ...raw.dataSync?.sqlserver,
+      },
+    },
+  };
 }
 
 export function saveConfig(cfg: AppConfig): void {

@@ -1126,16 +1126,25 @@ const SETTINGS_FIELDS = [
 ];
 
 function fillSettingsForm(cfg) {
+  $("s_active_connection").value = cfg.active_connection ?? "local";
   for (const [section, key] of SETTINGS_FIELDS) {
     const el = $(`s_${section}_${key}`);
     if (el) el.value = cfg[section]?.[key] ?? "";
   }
   const autoReceiptEl = $("s_tsms_auto_receipt_no");
   if (autoReceiptEl) autoReceiptEl.checked = cfg.tsms?.auto_receipt_no ?? false;
+  const sync = cfg.dataSync || {};
+  $("s_dataSync_server").value = sync.sqlserver?.server ?? "";
+  $("s_dataSync_database").value = sync.sqlserver?.database ?? "OracleDB";
+  $("s_dataSync_username").value = sync.sqlserver?.username ?? "";
+  $("s_dataSync_password").value = sync.sqlserver?.password ?? "";
+  $("s_dataSync_interval_seconds").value = sync.interval_seconds ?? 60;
+  $("s_dataSync_enabled").checked = sync.enabled ?? false;
 }
 
 function collectSettingsForm() {
   const cfg = JSON.parse(JSON.stringify(state.config));
+  cfg.active_connection = $("s_active_connection").value === "central" ? "central" : "local";
   for (const [section, key] of SETTINGS_FIELDS) {
     const el = $(`s_${section}_${key}`);
     if (!el) continue;
@@ -1144,15 +1153,30 @@ function collectSettingsForm() {
   }
   const autoReceiptEl = $("s_tsms_auto_receipt_no");
   if (autoReceiptEl) cfg.tsms.auto_receipt_no = autoReceiptEl.checked;
+  cfg.dataSync = cfg.dataSync || {};
+  cfg.dataSync.sqlserver = cfg.dataSync.sqlserver || {};
+  cfg.dataSync.sqlserver.server = $("s_dataSync_server").value.trim();
+  cfg.dataSync.sqlserver.database = $("s_dataSync_database").value.trim();
+  cfg.dataSync.sqlserver.username = $("s_dataSync_username").value.trim();
+  cfg.dataSync.sqlserver.password = $("s_dataSync_password").value;
+  cfg.dataSync.interval_seconds = Number($("s_dataSync_interval_seconds").value);
+  cfg.dataSync.enabled = $("s_dataSync_enabled").checked;
   return cfg;
 }
 
 $("btnSaveSettings").addEventListener("click", async () => {
   const cfg = collectSettingsForm();
-  await window.pos.saveConfig(cfg);
-  state.config = cfg;
-  $("settingsStatus").textContent = "Saved";
-  setTimeout(() => ($("settingsStatus").textContent = ""), 2000);
+  $("settingsStatus").textContent = "Saving...";
+  try {
+    await window.pos.saveConfig(cfg);
+    state.config = cfg;
+    const activeDb = cfg.active_connection === "central" ? cfg.dataSync.sqlserver : cfg.sqlserver;
+    $("connSub").textContent = `${activeDb.server} / ${activeDb.database}`;
+    $("settingsStatus").textContent = "Saved";
+    setTimeout(() => ($("settingsStatus").textContent = ""), 2000);
+  } catch (e) {
+    $("settingsStatus").textContent = `Failed: ${e.message}`;
+  }
 });
 
 $("btnTestConn").addEventListener("click", async () => {
@@ -1167,6 +1191,24 @@ $("btnTestConn").addEventListener("click", async () => {
   } else {
     $("settingsStatus").textContent = `Failed: ${res.message}`;
   }
+});
+
+$("btnTestSyncConn").addEventListener("click", async () => {
+  $("dataSyncStatus").textContent = "Testing central connection...";
+  try {
+    const res = await window.pos.testDataSyncConnection(collectSettingsForm());
+    $("dataSyncStatus").textContent = !res.tableExists
+      ? `Connected to ${res.dbName}; dbo.dts_pitx_payload is missing.`
+      : res.syncSchemaReady
+        ? `Connected to ${res.dbName}; payload table and sync key found.`
+        : `Connected to ${res.dbName}, but the sync_id migration is missing.`;
+  } catch (e) {
+    $("dataSyncStatus").textContent = `Connection failed: ${e.message}`;
+  }
+});
+
+window.pos.onDataSyncEvent((event) => {
+  $("dataSyncStatus").textContent = event.message;
 });
 
 $("btnCreateTable").addEventListener("click", async () => {
@@ -1187,7 +1229,12 @@ async function boot() {
   const hasConfigFile = await window.pos.hasConfigFile();
   state.config = await window.pos.getConfig();
   fillSettingsForm(state.config);
-  $("connSub").textContent = `${state.config.sqlserver.server} / ${state.config.sqlserver.database}`;
+  const activeDb = state.config.active_connection === "central"
+    ? state.config.dataSync.sqlserver
+    : state.config.sqlserver;
+  $("connSub").textContent = `${activeDb.server} / ${activeDb.database}`;
+  const syncStatus = await window.pos.getDataSyncStatus();
+  if (syncStatus.enabled) $("dataSyncStatus").textContent = "Automatic sync is enabled.";
 
   const today = new Date().toISOString().slice(0, 10);
   $("rangeStart").value = today;

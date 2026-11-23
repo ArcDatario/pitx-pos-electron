@@ -81,6 +81,25 @@ This runs `electron-builder` using the `build` block in `package.json`
 first — there's a placeholder gap there since I can't generate binary icon
 files. Output lands in `release-fixed/`.
 
+## Central data sync
+
+The Settings tab can optionally sync new and updated rows from the configured
+local `dbo.dts_pitx_payload` table to a central SQL Server table. Automatic sync
+runs immediately when enabled and then at the configured interval while the app
+is running. It matches rows by `sync_id` and tracks successful source syncs in
+`sync_synced_at`; the central table must also have the unique `sync_id` column.
+Apply the SQL migration to both databases before enabling sync.
+
+Settings also lets you choose which payload database is active for browsing
+records, reports, and TSMS submit/resubmit/void actions. **Get Data** and table
+installation always use the local POS database because those operations depend
+on its source sales view. The active database selection is saved between runs.
+
+Configure the central SQL Server connection in Settings and test it before
+enabling sync. Use a dedicated account with only the required table permissions.
+The connection password is stored in the user's config file, so limit access to
+that file and never put production credentials in source control.
+
 ## Automatic updates
 
 The installed app checks the GitHub Releases feed for `ArcDatario/pitx-pos-electron`.

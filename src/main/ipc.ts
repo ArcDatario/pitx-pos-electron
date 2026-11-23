@@ -18,6 +18,9 @@ let controller: SubmitController = { abort: false, paused: false, pauseNotified:
 let automationEnabled = false;
 let automationTimer: NodeJS.Timeout | null = null;
 let automationRunning = false;
+let dataSyncEnabled = false;
+let dataSyncTimer: NodeJS.Timeout | null = null;
+let dataSyncRunning = false;
 
 function getAutomationToday(): string {
   return new Date().toISOString().slice(0, 10);
@@ -130,6 +133,58 @@ function stopAutomationTimer() {
   if (automationTimer) {
     clearInterval(automationTimer);
     automationTimer = null;
+  }
+}
+
+async function runDataSyncCycle(cfg: AppConfig, win: BrowserWindow) {
+  if (!dataSyncEnabled || dataSyncRunning || !win || win.isDestroyed()) return;
+  dataSyncRunning = true;
+  send(win, "data-sync:event", { type: "running", message: "Syncing payload rows to the central server..." });
+  try {
+    const result = await db.syncPayloadToCentral(cfg);
+    send(win, "data-sync:event", {
+      type: "success",
+      synced: result.synced,
+      message: result.synced
+        ? `Synced ${result.synced} payload row(s).`
+        : "Everything is up to date.",
+    });
+  } catch (e: any) {
+    const message = e?.message ?? String(e);
+    console.error("[data-sync] cycle failed:", message);
+    send(win, "data-sync:event", { type: "error", message: `Data sync failed: ${message}` });
+  } finally {
+    dataSyncRunning = false;
+  }
+}
+
+function stopDataSyncTimer(win?: BrowserWindow) {
+  dataSyncEnabled = false;
+  if (dataSyncTimer) {
+    clearInterval(dataSyncTimer);
+    dataSyncTimer = null;
+  }
+  if (win && !win.isDestroyed()) {
+    send(win, "data-sync:event", { type: "stopped", message: "Automatic sync is off." });
+  }
+}
+
+function startDataSyncTimer(cfg: AppConfig, win: BrowserWindow) {
+  stopDataSyncTimer(win);
+  if (!cfg.dataSync?.enabled) return;
+
+  dataSyncEnabled = true;
+  const intervalSeconds = Math.max(30, Number(cfg.dataSync.interval_seconds) || 60);
+  dataSyncTimer = setInterval(() => {
+    void runDataSyncCycle(cfg, win);
+  }, intervalSeconds * 1000);
+  void runDataSyncCycle(cfg, win);
+}
+
+export function resumeDataSync(cfg: AppConfig, getWindow: () => BrowserWindow | null) {
+  if (cfg.dataSync?.enabled) {
+    const win = getWindow();
+    if (win && !win.isDestroyed()) startDataSyncTimer(cfg, win);
   }
 }
 
@@ -282,7 +337,20 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   ipcMain.handle("config:get", () => loadConfig());
 
   ipcMain.handle("config:save", (_e, cfg: AppConfig) => {
+    if (cfg.active_connection !== "local" && cfg.active_connection !== "central") {
+      throw new Error("Select either the local or central payload database.");
+    }
+    if (cfg.dataSync?.enabled || cfg.active_connection === "central") {
+      const target = cfg.dataSync.sqlserver;
+      if (!target?.server || !target.database || !target.username || !target.password) {
+        throw new Error("Enter the central SQL Server connection details before enabling sync or selecting it as active.");
+      }
+      if (cfg.dataSync?.enabled && (!Number.isFinite(cfg.dataSync.interval_seconds) || cfg.dataSync.interval_seconds < 30)) {
+        throw new Error("Sync interval must be at least 30 seconds.");
+      }
+    }
     saveConfig(cfg);
+    startDataSyncTimer(cfg, getWindow());
     return { ok: true, path: getConfigFilePath() };
   });
 
@@ -295,6 +363,15 @@ export function registerIpcHandlers(getWindow: () => BrowserWindow) {
   ipcMain.handle("config:test-connection", async (_e, cfg: AppConfig) => {
     return db.testConnection(cfg);
   });
+
+  ipcMain.handle("data-sync:test-connection", async (_e, cfg: AppConfig) => {
+    return db.testDataSyncConnection(cfg);
+  });
+
+  ipcMain.handle("data-sync:status", () => ({
+    enabled: dataSyncEnabled,
+    running: dataSyncRunning,
+  }));
 
   ipcMain.handle("db:transfer", async (_e, args: { start: string; end: string }) => {
     const cfg = loadConfig();

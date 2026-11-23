@@ -2,8 +2,7 @@ import sql, { ConnectionPool } from "mssql";
 import { randomUUID } from "crypto";
 import { AppConfig, SqlServerConfig } from "./config";
 
-let pool: ConnectionPool | null = null;
-let poolKey = "";
+const pools = new Map<string, ConnectionPool>();
 
 /** "POS1\SQLEXPRESS" -> { server: "POS1", instanceName: "SQLEXPRESS" } */
 function parseServer(serverStr: string): { server: string; instanceName?: string } {
@@ -28,24 +27,166 @@ function buildMssqlConfig(sc: SqlServerConfig): sql.config {
   };
 }
 
-export async function getPool(cfg: AppConfig): Promise<ConnectionPool> {
-  const key = JSON.stringify(cfg.sqlserver);
-  if (pool && poolKey === key && pool.connected) {
+async function getPoolFor(sc: SqlServerConfig): Promise<ConnectionPool> {
+  const key = JSON.stringify(sc);
+  const existing = pools.get(key);
+  if (existing?.connected) {
     try {
-      await pool.request().query("SELECT 1 AS ok");
-      return pool;
+      await existing.request().query("SELECT 1 AS ok");
+      return existing;
     } catch {
       try {
-        await pool.close();
+        await existing.close();
       } catch {
         /* ignore */
       }
     }
   }
-  poolKey = key;
-  pool = new sql.ConnectionPool(buildMssqlConfig(cfg.sqlserver));
+  const pool = new sql.ConnectionPool(buildMssqlConfig(sc));
+  pools.set(key, pool);
   await pool.connect();
   return pool;
+}
+
+async function getLocalPool(cfg: AppConfig): Promise<ConnectionPool> {
+  return getPoolFor(cfg.sqlserver);
+}
+
+export async function getPool(cfg: AppConfig): Promise<ConnectionPool> {
+  const active = cfg.active_connection === "central"
+    ? cfg.dataSync.sqlserver
+    : cfg.sqlserver;
+  return getPoolFor(active);
+}
+
+async function verifyPayloadSyncSchema(p: ConnectionPool, source: boolean): Promise<void> {
+  const result = await p.request().query(`
+    SELECT OBJECT_ID('dbo.dts_pitx_payload', 'U') AS tableId,
+           COL_LENGTH('dbo.dts_pitx_payload', 'sync_id') AS syncIdLength,
+           COL_LENGTH('dbo.dts_pitx_payload', 'sync_synced_at') AS syncTimestampLength
+  `);
+  const schema = result.recordset[0];
+  if (!schema?.tableId) {
+    throw new Error("dbo.dts_pitx_payload does not exist in the configured database.");
+  }
+  if (schema.syncIdLength === null || (source && schema.syncTimestampLength === null)) {
+    throw new Error(
+      source
+        ? "Sync schema is missing on CheckPostingDB. Add sync_id and sync_synced_at using the provided SQL migration."
+        : "Central sync schema is missing. Add sync_id using the provided SQL migration."
+    );
+  }
+}
+
+const PAYLOAD_SYNC_COLUMNS = [
+  "businessdate", "transdatetime", "locationname", "storenum", "GUESTCHECKID",
+  "ordertypename", "receipt_no", "netsales", "vat_12", "lessvat", "lessPWD",
+  "lessSC", "lessEMP", "lessNtnlAth", "lessSoloparent", "voidtotal_amt",
+  "voidtotal_qty", "gc_sales", "gc_excess", "otherdiscount", "vat", "gross_sales",
+  "vatable_sales", "sc_vat_excempt_sales", "other_tax", "status", "retry_count",
+  "next_retry_at", "transaction_id", "uuid", "submission_uuid", "submission_timestamp",
+  "submission_checksum", "transaction_checksum", "last_error", "last_payload_sent",
+  "last_response_body", "last_response_code", "last_attempt_at", "updated_at",
+] as const;
+
+const PAYLOAD_SYNC_FIELDS = ["sync_id", ...PAYLOAD_SYNC_COLUMNS] as const;
+
+export async function testDataSyncConnection(cfg: AppConfig): Promise<{ dbName: string; tableExists: boolean; syncSchemaReady: boolean }> {
+  const target = cfg.dataSync.sqlserver;
+  if (!target.server || !target.database || !target.username || !target.password) {
+    throw new Error("Enter the central SQL Server, database, username, and password in Settings.");
+  }
+
+  const central = new sql.ConnectionPool(buildMssqlConfig(target));
+  try {
+    await central.connect();
+    const result = await central.request().query(`
+      SELECT DB_NAME() AS dbName,
+             OBJECT_ID('dbo.dts_pitx_payload', 'U') AS tableId,
+             COL_LENGTH('dbo.dts_pitx_payload', 'sync_id') AS syncIdLength
+    `);
+    return {
+      dbName: String(result.recordset[0].dbName),
+      tableExists: Boolean(result.recordset[0].tableId),
+      syncSchemaReady: result.recordset[0].syncIdLength !== null,
+    };
+  } finally {
+    if (central.connected) await central.close();
+  }
+}
+
+export async function syncPayloadToCentral(cfg: AppConfig): Promise<{ synced: number }> {
+  const target = cfg.dataSync.sqlserver;
+  if (!target.server || !target.database || !target.username || !target.password) {
+    throw new Error("Enter the central SQL Server, database, username, and password in Settings.");
+  }
+
+  const source = await getLocalPool(cfg);
+  await verifyPayloadSyncSchema(source, true);
+
+  const central = new sql.ConnectionPool(buildMssqlConfig(target));
+  let synced = 0;
+  try {
+    await central.connect();
+    await verifyPayloadSyncSchema(central, false);
+
+    const rowsResult = await source.request()
+      .input("limit", sql.Int, Math.max(1, cfg.worker.batch_size || 100))
+      .query(`
+        SELECT TOP (@limit) sync_id, ${PAYLOAD_SYNC_COLUMNS.map((column) => `[${column}]`).join(", ")},
+               CONVERT(VARCHAR(33), updated_at, 126) AS sync_source_updated_at
+        FROM dbo.dts_pitx_payload
+        WHERE sync_synced_at IS NULL OR updated_at > sync_synced_at
+        ORDER BY updated_at, sync_id
+      `);
+    const rows = rowsResult.recordset as Array<Record<string, any>>;
+    if (!rows.length) return { synced: 0 };
+
+    const aliases = PAYLOAD_SYNC_FIELDS.map((column, index) => `@p${index} AS [${column}]`).join(", ");
+    const insertColumns = PAYLOAD_SYNC_FIELDS.map((column) => `[${column}]`).join(", ");
+    const insertValues = PAYLOAD_SYNC_FIELDS.map((column) => `source.[${column}]`).join(", ");
+    const updates = PAYLOAD_SYNC_COLUMNS
+      .map((column) => `target.[${column}] = source.[${column}]`)
+      .join(", ");
+    const mergeQuery = `
+      MERGE dbo.dts_pitx_payload WITH (HOLDLOCK) AS target
+      USING (SELECT ${aliases}) AS source
+        ON target.sync_id = source.sync_id
+      WHEN MATCHED THEN UPDATE SET ${updates}
+      WHEN NOT MATCHED THEN
+        INSERT (${insertColumns}) VALUES (${insertValues});
+    `;
+
+    for (const row of rows) {
+      if (row.updated_at == null || !row.sync_source_updated_at) {
+        throw new Error(`Payload ${row.sync_id} has no updated_at timestamp; it was not synced.`);
+      }
+      const request = central.request();
+      PAYLOAD_SYNC_FIELDS.forEach((column, index) => {
+        if (column === "sync_id") {
+          request.input(`p${index}`, sql.UniqueIdentifier, row[column]);
+        } else {
+          request.input(`p${index}`, row[column] ?? null);
+        }
+      });
+      await request.query(mergeQuery);
+
+      await source.request()
+        .input("syncId", sql.UniqueIdentifier, row.sync_id)
+        .input("sourceUpdatedAt", sql.VarChar(33), row.sync_source_updated_at)
+        .query(`
+          UPDATE dbo.dts_pitx_payload
+          SET sync_synced_at = updated_at
+          WHERE sync_id = @syncId
+            AND updated_at = CONVERT(DATETIME2(7), @sourceUpdatedAt, 126)
+        `);
+      synced++;
+    }
+
+    return { synced };
+  } finally {
+    if (central.connected) await central.close();
+  }
 }
 
 export async function testConnection(cfg: AppConfig): Promise<{
@@ -56,7 +197,7 @@ export async function testConnection(cfg: AppConfig): Promise<{
   tables?: { name: string; exists: boolean; rows?: number }[];
 }> {
   try {
-    const p = await getPool(cfg);
+    const p = await getLocalPool(cfg);
     const versionRes = await p.request().query("SELECT @@VERSION AS v");
     const version = String(versionRes.recordset[0].v).split("\n")[0];
 
@@ -162,7 +303,7 @@ export async function transfer(
   startDate: string,
   endDate: string
 ): Promise<number> {
-  const p = await getPool(cfg);
+  const p = await getLocalPool(cfg);
   await ensureColumnsExist(p);
 
   const { locationname, storenum } = cfg.filters;
@@ -807,7 +948,7 @@ export async function markFailed(
  * script, prefer that one instead - this is a best-effort recreation.
  */
 export async function installCreateTable(cfg: AppConfig): Promise<void> {
-  const p = await getPool(cfg);
+  const p = await getLocalPool(cfg);
   await p.request().query(`
     IF NOT EXISTS (SELECT 1 FROM INFORMATION_SCHEMA.TABLES WHERE TABLE_NAME = 'dts_pitx_payload')
     BEGIN
@@ -852,10 +993,13 @@ export async function installCreateTable(cfg: AppConfig): Promise<void> {
         last_response_body NVARCHAR(MAX) NULL,
         last_response_code INT NULL,
         last_attempt_at DATETIME2 NULL,
-        updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME()
+        updated_at DATETIME2 NOT NULL DEFAULT SYSDATETIME(),
+        sync_id UNIQUEIDENTIFIER NOT NULL DEFAULT NEWSEQUENTIALID(),
+        sync_synced_at DATETIME2 NULL
       );
       CREATE UNIQUE INDEX UX_dts_pitx_payload_receipt_no ON dbo.dts_pitx_payload(receipt_no)
         WHERE receipt_no IS NOT NULL;
+      CREATE UNIQUE INDEX UX_dts_pitx_payload_sync_id ON dbo.dts_pitx_payload(sync_id);
     END
   `);
 }

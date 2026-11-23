@@ -50,11 +50,17 @@ CREATE TABLE [dbo].[dts_pitx_payload](
 	[other_tax] [decimal](18, 2) NOT NULL,
 	[gross_sales] [decimal](18, 2) NOT NULL,
 	[uuid] [varchar](155) NULL,
+	[sync_id] [uniqueidentifier] NOT NULL CONSTRAINT [DF_dts_pitx_payload_sync_id] DEFAULT (NEWSEQUENTIALID()),
+	[sync_synced_at] [datetime2](7) NULL,
  CONSTRAINT [PK_dts_pitx_payload] PRIMARY KEY NONCLUSTERED 
 (
 	[payload_id] ASC
 )WITH (PAD_INDEX = OFF, STATISTICS_NORECOMPUTE = OFF, IGNORE_DUP_KEY = OFF, ALLOW_ROW_LOCKS = ON, ALLOW_PAGE_LOCKS = ON) ON [PRIMARY]
 ) ON [PRIMARY] TEXTIMAGE_ON [PRIMARY]
+GO
+
+CREATE UNIQUE INDEX [UX_dts_pitx_payload_sync_id]
+  ON [dbo].[dts_pitx_payload]([sync_id])
 GO
 
 ALTER TABLE [dbo].[dts_pitx_payload] ADD  DEFAULT ((0)) FOR [retry_count]

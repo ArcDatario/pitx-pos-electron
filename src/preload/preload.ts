@@ -6,6 +6,13 @@ contextBridge.exposeInMainWorld("pos", {
   saveConfig: (cfg: unknown) => ipcRenderer.invoke("config:save", cfg),
   getConfigPath: () => ipcRenderer.invoke("config:path"),
   testConnection: (cfg: unknown) => ipcRenderer.invoke("config:test-connection", cfg),
+  testDataSyncConnection: (cfg: unknown) => ipcRenderer.invoke("data-sync:test-connection", cfg),
+  getDataSyncStatus: () => ipcRenderer.invoke("data-sync:status"),
+  onDataSyncEvent: (callback: (event: any) => void) => {
+    const listener = (_e: unknown, payload: any) => callback(payload);
+    ipcRenderer.on("data-sync:event", listener);
+    return () => ipcRenderer.removeListener("data-sync:event", listener);
+  },
 
   transfer: (start: string, end: string) => ipcRenderer.invoke("db:transfer", { start, end }),
   getStatusCounts: (filters: unknown) => ipcRenderer.invoke("db:status-counts", filters),

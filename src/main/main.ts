@@ -2,7 +2,7 @@ import { app, BrowserWindow, Menu, Tray, nativeImage, Notification, MenuItemCons
 import * as path from "path";
 import * as fs from "fs";
 import { initLogger } from "./logger";
-import { registerIpcHandlers, resumeAutomation } from "./ipc";
+import { registerIpcHandlers, resumeAutomation, resumeDataSync } from "./ipc";
 import { loadConfig } from "./config";
 import { autoUpdater } from "electron-updater";
 
@@ -275,6 +275,7 @@ app.whenReady().then(() => {
   buildMenu();
   buildTray();
   createWindow();
+  resumeDataSync(cfg, () => mainWindow);
 
   if (cfg.automation_enabled && app.isPackaged) {
     resumeAutomation(cfg, () => mainWindow);
