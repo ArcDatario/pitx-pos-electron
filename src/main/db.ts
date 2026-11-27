@@ -315,13 +315,60 @@ export async function transfer(
     SET NOCOUNT ON;
 
     WITH VoidFCR AS (
-        SELECT DISTINCT FCRInvNumber
-        FROM dbo.v_salesdetails
-        WHERE BusinessDate BETWEEN @startDate AND @endDate
-          AND Transtype = 'Item Sale'
-          AND amt < 0
-          AND FCRInvNumber IS NOT NULL
-          AND FCRInvNumber <> ''
+        SELECT DISTINCT voidLine.BusinessDate, voidLine.FCRInvNumber
+        FROM dbo.v_salesdetails voidLine
+        WHERE voidLine.BusinessDate BETWEEN @startDate AND @endDate
+          AND voidLine.Transtype = 'Item Sale'
+          AND voidLine.amt < 0
+          AND voidLine.FCRInvNumber IS NOT NULL
+          AND voidLine.FCRInvNumber <> ''
+          -- A negative item line is a cancellation when the same FCR also
+          -- has positive item sales; only negative-only FCRs are full voids.
+          AND NOT EXISTS (
+              SELECT 1
+              FROM dbo.v_salesdetails positiveLine
+              WHERE positiveLine.BusinessDate = voidLine.BusinessDate
+                AND positiveLine.FCRInvNumber = voidLine.FCRInvNumber
+                AND positiveLine.Transtype = 'Item Sale'
+                AND positiveLine.amt > 0
+          )
+    ),
+    -- A void may contain only the trailing digits of the original FCR
+    -- invoice (for example 3277 for 123277). Resolve it to a same-day
+    -- positive sale, preferring the closest longer FCR match.
+    VoidPartnerCandidates AS (
+        SELECT
+            vf.BusinessDate,
+            vf.FCRInvNumber AS VoidFCRInvNumber,
+            pos.FCRInvNumber AS PartnerFCRInvNumber,
+            ROW_NUMBER() OVER (
+                PARTITION BY vf.BusinessDate, vf.FCRInvNumber
+                ORDER BY
+                    LEN(CONVERT(VARCHAR(155), pos.FCRInvNumber)) - LEN(CONVERT(VARCHAR(155), vf.FCRInvNumber)) ASC,
+                    ABS(DATEDIFF(SECOND, MIN(vfrow.sys_datetime), MAX(pos.sys_datetime))) ASC,
+                    MAX(pos.CheckNumber) DESC
+            ) AS PartnerRank
+        FROM VoidFCR vf
+        INNER JOIN dbo.v_salesdetails vfrow
+            ON vfrow.FCRInvNumber = vf.FCRInvNumber
+           AND vfrow.BusinessDate = vf.BusinessDate
+           AND vfrow.BusinessDate BETWEEN @startDate AND @endDate
+           AND vfrow.Transtype = 'Item Sale'
+           AND vfrow.amt < 0
+        INNER JOIN dbo.v_salesdetails pos
+            ON pos.BusinessDate = vfrow.BusinessDate
+           AND pos.Transtype = 'Item Sale'
+           AND pos.amt > 0
+           AND pos.CheckNumber <> vfrow.CheckNumber
+           AND pos.FCRInvNumber IS NOT NULL
+           AND CONVERT(VARCHAR(155), pos.FCRInvNumber) LIKE '%' + CONVERT(VARCHAR(155), vf.FCRInvNumber)
+           AND LEN(CONVERT(VARCHAR(155), pos.FCRInvNumber)) > LEN(CONVERT(VARCHAR(155), vf.FCRInvNumber))
+        GROUP BY vf.BusinessDate, vf.FCRInvNumber, pos.FCRInvNumber
+    ),
+    VoidPartnerMap AS (
+        SELECT BusinessDate, VoidFCRInvNumber, PartnerFCRInvNumber
+        FROM VoidPartnerCandidates
+        WHERE PartnerRank = 1
     ),
     -- Identify Solo Parent transactions
     SoloParentDiscount AS (
@@ -337,7 +384,7 @@ export async function transfer(
         SELECT
             v.BusinessDate,
             MAX(v.sys_datetime) AS transdatetime,
-            v.FCRInvNumber AS guestcheckid,
+            COALESCE(vpm.PartnerFCRInvNumber, v.FCRInvNumber) AS guestcheckid,
             -- ordertypename: 
             -- If Solo Parent -> 'Solo Parent'
             -- If Employee -> 'Employee'
@@ -347,7 +394,7 @@ export async function transfer(
                 WHEN SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.lessemp ELSE 0 END), 0)) > 0 THEN 'Employee'
                 ELSE MAX(v.order_type)
             END AS ordertypename,
-            MAX(v.FCRInvNumber) AS receipt_no,
+            MAX(COALESCE(vpm.PartnerFCRInvNumber, v.FCRInvNumber)) AS receipt_no,
             -- netsales: from source
             SUM(ISNULL(ABS(CASE WHEN v.amt > 0 THEN v.Netsales ELSE 0 END), 0)) AS netsales,
             -- vat_12: Use taxcollected from source for ALL transactions
@@ -402,11 +449,12 @@ export async function transfer(
                 ELSE 0 
             END AS is_void
         FROM dbo.v_salesdetails v
-        INNER JOIN VoidFCR vf ON v.FCRInvNumber = vf.FCRInvNumber
+        INNER JOIN VoidFCR vf ON v.FCRInvNumber = vf.FCRInvNumber AND v.BusinessDate = vf.BusinessDate
+        LEFT JOIN VoidPartnerMap vpm ON vpm.VoidFCRInvNumber = v.FCRInvNumber AND vpm.BusinessDate = v.BusinessDate
         LEFT JOIN SoloParentDiscount sp ON v.FCRInvNumber = sp.FCRInvNumber
         WHERE v.Transtype = 'Item Sale'
           AND v.BusinessDate BETWEEN @startDate AND @endDate
-        GROUP BY v.BusinessDate, v.FCRInvNumber, sp.FCRInvNumber
+        GROUP BY v.BusinessDate, v.FCRInvNumber, vpm.PartnerFCRInvNumber, sp.FCRInvNumber
     ),
     NormalAgg AS (
         SELECT
@@ -419,63 +467,63 @@ export async function transfer(
             -- Otherwise use source
             CASE 
                 WHEN sp.FCRInvNumber IS NOT NULL THEN 'Solo Parent'
-                WHEN SUM(ISNULL(ABS(v.lessemp), 0)) > 0 THEN 'Employee'
+                WHEN SUM(ISNULL(v.lessemp, 0)) > 0 THEN 'Employee'
                 ELSE MAX(v.order_type)
             END AS ordertypename,
             MAX(v.FCRInvNumber) AS receipt_no,
-            -- netsales: from source
-            SUM(ISNULL(ABS(v.Netsales), 0)) AS netsales,
+            -- Keep source signs so cancelled item lines offset their sale lines.
+            SUM(ISNULL(v.Netsales, 0)) AS netsales,
             -- vat_12: Use taxcollected from source for ALL transactions
-            SUM(ISNULL(ABS(v.taxcollected), 0)) AS vat_12,
+            SUM(ISNULL(v.taxcollected, 0)) AS vat_12,
             -- lessvat: SUM the lessvat column from v_salesdetails
-            SUM(ISNULL(ABS(v.lessvat), 0)) AS lessvat,
+            SUM(ISNULL(v.lessvat, 0)) AS lessvat,
             -- Use source values directly for all discount columns (NO CALCULATIONS)
-            SUM(ISNULL(ABS(v.LessPWD), 0)) AS lessPWD,
-            SUM(ISNULL(ABS(v.LessSC), 0)) AS lessSC,
-            SUM(ISNULL(ABS(v.lessemp), 0)) AS lessEMP,
-            SUM(ISNULL(ABS(v.lessNationalAth), 0)) AS lessNtnlAth,
-            SUM(ISNULL(ABS(v.lessSoloparent), 0)) AS lessSoloparent,
+            SUM(ISNULL(v.LessPWD, 0)) AS lessPWD,
+            SUM(ISNULL(v.LessSC, 0)) AS lessSC,
+            SUM(ISNULL(v.lessemp, 0)) AS lessEMP,
+            SUM(ISNULL(v.lessNationalAth, 0)) AS lessNtnlAth,
+            SUM(ISNULL(v.lessSoloparent, 0)) AS lessSoloparent,
             -- voidtotal_amt: 0 for non-void transactions
             0 AS voidtotal_amt,
             -- voidtotal_qty: 0 for non-void transactions
             0 AS voidtotal_qty,
-            SUM(ISNULL(ABS(v.srvc_amt), 0)) AS gc_sales,
-            SUM(ISNULL(ABS(v.GC_excess), 0)) AS gc_excess,
-            SUM(ISNULL(ABS(v.other_disc), 0)) AS otherdiscount,
+            SUM(ISNULL(v.srvc_amt, 0)) AS gc_sales,
+            SUM(ISNULL(v.GC_excess, 0)) AS gc_excess,
+            SUM(ISNULL(v.other_disc, 0)) AS otherdiscount,
             -- vat: Same as vat_12 (use taxcollected from source)
-            SUM(ISNULL(ABS(v.taxcollected), 0)) AS vat,
+            SUM(ISNULL(v.taxcollected, 0)) AS vat,
             -- gross_sales: netsales + vat_12 + lessPWD + lessSC + lessSoloparent + lessNtnlAth + lessEMP
-            SUM(ISNULL(ABS(v.Netsales), 0)) +
-            SUM(ISNULL(ABS(v.taxcollected), 0)) +
-            SUM(ISNULL(ABS(v.LessPWD), 0)) +
-            SUM(ISNULL(ABS(v.LessSC), 0)) +
-            SUM(ISNULL(ABS(v.lessSoloparent), 0)) +
-            SUM(ISNULL(ABS(v.lessNationalAth), 0)) +
-            SUM(ISNULL(ABS(v.lessemp), 0)) AS gross_sales,
+            SUM(ISNULL(v.Netsales, 0)) +
+            SUM(ISNULL(v.taxcollected, 0)) +
+            SUM(ISNULL(v.LessPWD, 0)) +
+            SUM(ISNULL(v.LessSC, 0)) +
+            SUM(ISNULL(v.lessSoloparent, 0)) +
+            SUM(ISNULL(v.lessNationalAth, 0)) +
+            SUM(ISNULL(v.lessemp, 0)) AS gross_sales,
             -- vatable_sales: 
             -- If lessvat = 0 (VATable): use VatableSales from source
             -- If lessvat > 0 (VAT-exempt): 0
             CASE
-                WHEN SUM(ISNULL(ABS(v.lessvat), 0)) = 0
-                THEN SUM(ISNULL(ABS(v.VatableSales), 0))
+                WHEN SUM(ISNULL(v.lessvat, 0)) = 0
+                THEN SUM(ISNULL(v.VatableSales, 0))
                 ELSE 0
             END AS vatable_sales,
             -- sc_vat_excempt_sales: 
             -- If lessvat > 0 (VAT-exempt): use Netsales from source
             -- If lessvat = 0 (VATable): 0
             CASE
-                WHEN SUM(ISNULL(ABS(v.lessvat), 0)) > 0
-                THEN SUM(ISNULL(ABS(v.Netsales), 0))
+                WHEN SUM(ISNULL(v.lessvat, 0)) > 0
+                THEN SUM(ISNULL(v.Netsales, 0))
                 ELSE 0
             END AS sc_vat_excempt_sales,
             0 AS other_tax,
             0 AS is_void
         FROM dbo.v_salesdetails v
-        LEFT JOIN VoidFCR vf ON v.FCRInvNumber = vf.FCRInvNumber
+        LEFT JOIN VoidFCR vf ON v.FCRInvNumber = vf.FCRInvNumber AND v.BusinessDate = vf.BusinessDate
         LEFT JOIN SoloParentDiscount sp ON v.FCRInvNumber = sp.FCRInvNumber
         WHERE vf.FCRInvNumber IS NULL
           AND v.Transtype = 'Item Sale'
-          AND v.amt > 0
+          AND v.amt <> 0
           AND v.BusinessDate BETWEEN @startDate AND @endDate
         GROUP BY v.BusinessDate, v.CheckNumber, sp.FCRInvNumber
     ),
@@ -603,13 +651,15 @@ export async function getSummaryMetrics(
       ISNULL(SUM(lessSoloparent), 0) AS lessSoloParent,
       ISNULL(SUM(lessEMP), 0) AS lessEMP,
       ISNULL(SUM(gc_excess), 0) AS gc_excess,
-      ISNULL(SUM(CASE WHEN LOWER(status) <> 'voided' THEN voidtotal_amt ELSE 0 END), 0) AS void_amt,
       ISNULL(SUM(netsales) + SUM(vat_12), 0) AS total_revenue
     FROM dbo.dts_pitx_payload
     ${where}
     ${where ? "AND " : "WHERE "}LOWER(status) <> 'voided'
   `);
-  return res.recordset[0];
+  const voidReq = p.request();
+  const voidWhere = buildWhereClause(voidReq, filters);
+  const voidRes = await voidReq.query(`SELECT ISNULL(SUM(voidtotal_amt), 0) AS void_amt FROM dbo.dts_pitx_payload ${voidWhere}`);
+  return { ...res.recordset[0], void_amt: voidRes.recordset[0].void_amt };
 }
 
 function buildWhereClause(req: sql.Request, filters: RecordFilters): string {
@@ -1047,7 +1097,7 @@ export async function getSalesReport(cfg: AppConfig, startDate: string, endDate:
       ELSE ISNULL(ordertypename, 'Standard') END AS orderType,
       ISNULL(SUM(netsales), 0) AS netSales,
       ISNULL(SUM(voidtotal_amt), 0) AS voids, ISNULL(SUM(gc_excess), 0) AS gcExcess
-    FROM dbo.dts_pitx_payload WHERE ${submitted}
+    FROM dbo.dts_pitx_payload WHERE ${range}
     GROUP BY CASE WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%pwd%' THEN 'PWD'
       WHEN LOWER(ISNULL(ordertypename, '')) LIKE '%senior%' OR LOWER(ISNULL(ordertypename, '')) LIKE '%citizen%' THEN 'Senior Citizen'
       ELSE ISNULL(ordertypename, 'Standard') END ORDER BY orderType

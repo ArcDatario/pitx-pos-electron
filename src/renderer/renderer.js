@@ -324,7 +324,11 @@ function renderTableRows(rows) {
           const s = (r.status || "").toLowerCase();
           return `<td><span class="badge ${s}">${r.status ?? ""}</span></td>`;
         }
-        if (["netsales", "vat_12", "lessvat", "gross_sales", "voidtotal_amt"].includes(key)) {
+        if (key === "voidtotal_amt") {
+          const voidAmount = r.voidtotal_amt ?? r.VOIDTOTAL_AMT ?? r.VoidTotal_Amt ?? 0;
+          return `<td>${fmt(voidAmount)}</td>`;
+        }
+        if (["netsales", "vat_12", "lessvat", "gross_sales"].includes(key)) {
           return `<td>${fmt(r[key])}</td>`;
         }
         if (key === "discount") {
